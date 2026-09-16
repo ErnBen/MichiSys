@@ -58,23 +58,12 @@ Checklist mínima para despliegue en producción:
    - Verificar que la aplicación responde en `APP_URL`.
    - Crear usuario admin si es necesario para pruebas: usar seed o `php artisan tinker`.
 
-   ## Despliegue automático desde GitHub Actions
+   ## Despliegue automático (deshabilitado)
 
-   Para habilitar despliegue automático al hacer merge en `main` se añadió el workflow `.github/workflows/deploy.yml`.
+   El despliegue automático mediante GitHub Actions fue eliminado a petición del mantenedor.
 
-   Requisitos en GitHub (Secrets):
-   - `DEPLOY_HOST` — host o IP del servidor.
-   - `DEPLOY_USER` — usuario SSH del servidor.
-   - `DEPLOY_KEY` — clave privada SSH (sin passphrase) para el usuario.
-   - `DEPLOY_PATH` — ruta absoluta en el servidor donde se copiará la app (ej. `/var/www/michisys`).
-   - `DEPLOY_PORT` — opcional, puerto SSH (por defecto 22 si no se indica).
-
-   Notas:
-   - El workflow compila assets y sube el contenido del repo por SCP.
-   - Después ejecuta comandos remotos para instalar dependencias y migrar la base de datos.
-   - Asegúrate de excluir archivos sensibles si no quieres que sean subidos (configura `.gitignore` o modifica el workflow `source`).
-
+   Si en el futuro deseas habilitar despliegue automático, podemos volver a añadir un workflow que use SCP/SSH o un mecanismo de despliegue seguro y te guiaré para configurar los `Secrets` necesarios.
 
 ---
 
-Si quieres, puedo crear un script de despliegue (`deploy.sh`) o configurar GitHub Actions para deploy automático al hacer merge en `main`.
+Si quieres, puedo crear un script de despliegue (`deploy.sh`) para ejecución manual o preparar de nuevo el workflow de despliegue cuando decidas habilitarlo.
