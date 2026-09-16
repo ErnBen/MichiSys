@@ -57,3 +57,67 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## MichiSys — Sistema de ventas e inventario (resumen)
+
+Proyecto académico: aplicación Laravel para gestionar ventas, inventario y reportes básicos para pequeños comercios.
+
+Requisitos principales:
+- Registrar ventas y descontar stock automáticamente.
+- Alertas de stock bajo (cuando stock <= stock_minimo).
+- Roles `admin` y `cajero` con permisos diferenciados.
+- Comprobante interno imprimible y descarga PDF.
+
+### Requisitos del sistema
+- PHP 8.2
+- Composer
+- Node.js 18+ y npm
+- MySQL (o SQLite para pruebas locales)
+
+### Instalación rápida (local)
+1. Clona el repositorio.
+2. Instala dependencias PHP y Node:
+```
+composer install
+npm install
+```
+3. Crea el archivo de entorno y la clave de aplicación:
+```
+cp .env.example .env
+php artisan key:generate
+```
+4. Crea la base de datos y ejecuta migraciones:
+```
+php artisan migrate
+```
+5. Compila assets (opcional para desarrollo):
+```
+npm run dev
+```
+6. Ejecuta la aplicación localmente:
+```
+php artisan serve
+```
+
+### Ejecutar tests
+Localmente:
+```
+composer test
+```
+Para ejecutar tests específicos:
+```
+php artisan test --filter RolePermissionsTest
+```
+
+### Integración continua (CI)
+Se añadieron acciones de GitHub Actions en `.github/workflows/ci.yml` que ejecutan:
+- `composer install`
+- `npm ci`
+- `php artisan migrate --force`
+- `php artisan test`
+
+### Despliegue (resumen)
+Ver `DEPLOYMENT.md` para una checklist paso a paso y comandos recomendados.
+
+### Contacto
+Si necesitas que empuje los cambios al remoto o que ajuste la configuración del CI, dímelo y lo hago.
