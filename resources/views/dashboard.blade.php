@@ -91,6 +91,38 @@
         <div class="col-lg-3 col-6"><a href="{{ route('sales.create') }}" class="btn btn-lg btn-block btn-outline-warning mb-3">Registrar Venta</a></div>
         <div class="col-lg-3 col-6"><a href="{{ route('reports.index') }}" class="btn btn-lg btn-block btn-outline-danger mb-3">Ver reportes</a></div>
     </div>
+    
+    @if(!empty($lowStockList) && $lowStockList->isNotEmpty())
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Productos con stock bajo</h3></div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Stock actual</th>
+                                <th>Stock mínimo</th>
+                                <th>Recomendación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lowStockList as $p)
+                                <tr>
+                                    <td>{{ $p->name }}</td>
+                                    <td>{{ $p->stock }}</td>
+                                    <td>{{ $p->stock_minimo }}</td>
+                                    <td><span class="text-danger">Se recomienda reponer</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 @stop
 
 @section('js')

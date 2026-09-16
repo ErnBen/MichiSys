@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -43,6 +44,8 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'stock_minimo' => 'nullable|integer|min:0',
+            'fecha_vencimiento' => 'nullable|date',
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
         ]);
@@ -80,6 +83,8 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'stock_minimo' => 'nullable|integer|min:0',
+            'fecha_vencimiento' => 'nullable|date',
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
         ]);
@@ -94,6 +99,18 @@ class ProductController extends Controller
 
         $data['active'] = $request->has('active');
 
+        if ($request->filled('stock_minimo')) {
+            $data['stock_minimo'] = (int) $request->input('stock_minimo');
+        } else {
+            $data['stock_minimo'] = 0;
+        }
+
+        if ($request->filled('fecha_vencimiento')) {
+            $data['fecha_vencimiento'] = $request->input('fecha_vencimiento');
+        } else {
+            $data['fecha_vencimiento'] = null;
+        }
+
         $product->update($data);
 
         return Redirect::route('products.index')->with('success', 'Producto actualizado correctamente.');
@@ -101,6 +118,16 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        // Evitar eliminación si el producto está vinculado a ventas para mantener integridad histórica.
+        $linkedToSales = DB::table('sale_product')->where('product_id', $product->id)->exists();
+
+        if ($linkedToSales) {
+            // En lugar de borrar, desactivar el producto para conservar historial de ventas.
+            $product->update(['active' => false]);
+
+            return Redirect::route('products.index')->with('warning', 'El producto está vinculado a ventas y no puede eliminarse; se ha desactivado en su lugar.');
+        }
+
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }

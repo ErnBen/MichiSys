@@ -29,6 +29,8 @@ Route::middleware([
     Route::resource('clients', ClientController::class);
     Route::resource('providers', ProviderController::class);
     Route::resource('sales', SaleController::class)->except(['edit', 'update']);
+    Route::get('sales/{sale}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
+    Route::get('sales/{sale}/receipt.pdf', [SaleController::class, 'receiptPdf'])->name('sales.receipt.pdf');
     Route::resource('users', UserController::class);
 
     Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');

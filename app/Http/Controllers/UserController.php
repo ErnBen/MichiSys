@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Redirect;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (auth()->check() && auth()->user()->role === 'admin') {
+                return $next($request);
+            }
+            abort(403);
+        })->except(['show']);
+    }
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -35,6 +44,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
+            'role' => 'required|in:admin,cajero',
+            'active' => 'sometimes|boolean',
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -59,9 +70,11 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8',
+            'role' => 'required|in:admin,cajero',
+            'active' => 'sometimes|boolean',
         ]);
 
-        if ($data['password']) {
+        if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);

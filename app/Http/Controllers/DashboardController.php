@@ -18,7 +18,11 @@ class DashboardController extends Controller
         $totalCombos = Combo::count();
         $totalSales = Sale::count();
         $totalClients = Client::count();
-        $lowStockProducts = Product::where('stock', '<=', 5)->count();
+        $lowStockProducts = Product::whereColumn('stock', '<=', 'stock_minimo')->count();
+        $lowStockList = Product::whereColumn('stock', '<=', 'stock_minimo')
+            ->orderBy('stock')
+            ->limit(10)
+            ->get();
 
         $salesChartData = Sale::selectRaw('DATE(created_at) as day, SUM(total) as total')
             ->groupBy('day')
@@ -43,6 +47,7 @@ class DashboardController extends Controller
             'totalSales',
             'totalClients',
             'lowStockProducts',
+            'lowStockList',
             'salesChartData',
             'salesChartLabels'
         ));

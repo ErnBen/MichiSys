@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ComboController extends Controller
 {
@@ -121,6 +122,16 @@ class ComboController extends Controller
 
     public function destroy(Combo $combo)
     {
+        // Evitar eliminación si el combo está vinculado a ventas para mantener integridad histórica.
+        $linkedToSales = DB::table('sale_combo')->where('combo_id', $combo->id)->exists();
+
+        if ($linkedToSales) {
+            // Desactivar el combo en lugar de eliminarlo.
+            $combo->update(['active' => false]);
+
+            return Redirect::route('combos.index')->with('warning', 'El combo está vinculado a ventas y no puede eliminarse; se ha desactivado en su lugar.');
+        }
+
         if ($combo->image) {
             Storage::disk('public')->delete($combo->image);
         }

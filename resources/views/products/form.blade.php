@@ -39,6 +39,20 @@
         </div>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            <label>Stock mínimo</label>
+            <input type="number" name="stock_minimo" value="{{ old('stock_minimo', isset($product) ? $product->stock_minimo : 0) }}" class="form-control">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <label>Fecha de vencimiento</label>
+            <input type="date" name="fecha_vencimiento" value="{{ old('fecha_vencimiento', isset($product) ? $product->fecha_vencimiento : '') }}" class="form-control">
+        </div>
+    </div>
+</div>
 <div class="form-group">
     <label>Imagen</label>
     <input type="file" name="image" class="form-control-file">

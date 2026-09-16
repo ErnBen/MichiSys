@@ -11,3 +11,15 @@
     <input type="password" name="password" class="form-control" @if(!isset($user)) required @endif>
     @if(isset($user))<small class="form-text text-muted">Dejar en blanco para mantener la contraseña actual.</small>@endif
 </div>
+<div class="form-group">
+    <label>Rol</label>
+    <select name="role" class="form-control" required>
+        <option value="cajero" {{ old('role', $user?->role) == 'cajero' ? 'selected' : '' }}>Empleado / Cajero</option>
+        <option value="admin" {{ old('role', $user?->role) == 'admin' ? 'selected' : '' }}>Administrador</option>
+    </select>
+</div>
+<div class="form-group form-check">
+    <input type="hidden" name="active" value="0">
+    <input type="checkbox" name="active" value="1" class="form-check-input" id="active" {{ old('active', $user?->active ?? 1) ? 'checked' : '' }}>
+    <label class="form-check-label" for="active">Activo</label>
+</div>

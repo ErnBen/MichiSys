@@ -187,6 +187,22 @@ class SaleController extends Controller
         return view('sales.show', compact('sale'));
     }
 
+    public function receipt(Sale $sale)
+    {
+        $sale->load('products.product', 'combos.combo', 'client', 'user');
+
+        return view('sales.receipt', compact('sale'));
+    }
+
+    public function receiptPdf(Sale $sale)
+    {
+        $sale->load('products.product', 'combos.combo', 'client', 'user');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('sales.receipt', compact('sale'));
+
+        return $pdf->download("comprobante_venta_{$sale->id}.pdf");
+    }
+
     public function destroy(Sale $sale)
     {
         DB::transaction(function () use ($sale) {

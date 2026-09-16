@@ -66,4 +66,5 @@
         </div>
     </div>
     <a href="{{ route('sales.index') }}" class="btn btn-secondary">Volver</a>
+    <a href="{{ route('sales.receipt', $sale) }}" target="_blank" class="btn btn-primary">Imprimir comprobante</a>
 @stop
