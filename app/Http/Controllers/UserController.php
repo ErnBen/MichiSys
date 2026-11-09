@@ -9,23 +9,16 @@ use Illuminate\Support\Facades\Redirect;
 
 class UserController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            if (auth()->check() && auth()->user()->role === 'admin') {
-                return $next($request);
-            }
-            abort(403);
-        })->except(['show']);
-    }
     public function index(Request $request)
     {
         $search = $request->input('search');
 
-        $users = User::when($search, fn ($query) =>
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-        )
+        $users = User::where('business_id', $request->user()->business_id)
+            ->where('role', 'cajero')
+            ->when($search, fn ($query) => $query->where(fn ($query) =>
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+            ))
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
@@ -35,42 +28,49 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('users.create');
+        return view('users.create', ['user' => null]);
     }
 
     public function store(Request $request)
     {
+        $request->merge(['email' => mb_strtolower(trim($request->input('email', '')))]);
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,cajero',
             'active' => 'sometimes|boolean',
         ]);
 
         $data['password'] = Hash::make($data['password']);
-        User::create($data);
+        $data['role'] = 'cajero';
+        $data['active'] = $request->boolean('active');
+        $request->user()->business->users()->create($data);
 
         return Redirect::route('users.index')->with('success', 'Usuario creado correctamente.');
     }
 
     public function show(User $user)
     {
+        $this->ensureManagedCashier($user);
+
         return view('users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
+        $this->ensureManagedCashier($user);
+
         return view('users.edit', compact('user'));
     }
 
     public function update(Request $request, User $user)
     {
+        $this->ensureManagedCashier($user);
+        $request->merge(['email' => mb_strtolower(trim($request->input('email', '')))]);
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8',
-            'role' => 'required|in:admin,cajero',
             'active' => 'sometimes|boolean',
         ]);
 
@@ -80,6 +80,8 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        $data['role'] = 'cajero';
+        $data['active'] = $request->boolean('active');
         $user->update($data);
 
         return Redirect::route('users.index')->with('success', 'Usuario actualizado correctamente.');
@@ -87,8 +89,19 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->ensureManagedCashier($user);
+
         $user->delete();
 
         return Redirect::route('users.index')->with('success', 'Usuario eliminado correctamente.');
+    }
+
+    private function ensureManagedCashier(User $user): void
+    {
+        abort_unless(
+            (int) $user->business_id === (int) auth()->user()->business_id
+                && $user->role === 'cajero',
+            404
+        );
     }
 }

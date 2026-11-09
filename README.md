@@ -60,19 +60,23 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 ## MichiSys — Sistema de ventas e inventario (resumen)
 
-Proyecto académico: aplicación Laravel para gestionar ventas, inventario y reportes básicos para pequeños comercios.
+Aplicación Laravel para gestionar negocios, ventas, compras, inventario, producción y reportes de pequeños comercios. La base principal es SQLite y los registros están aislados por negocio.
 
 Requisitos principales:
 - Registrar ventas y descontar stock automáticamente.
 - Alertas de stock bajo (cuando stock <= stock_minimo).
 - Roles `admin` y `cajero` con permisos diferenciados.
 - Comprobante interno imprimible y descarga PDF.
+- Compras que registran costos históricos, lotes y vencimientos; el consumo de inventario prioriza lotes FEFO.
+- Insumos con unidad base en piezas, gramos o mililitros; las compras convierten automáticamente kg a g y l a ml.
+- Recetas y producciones con consumo transaccional de insumos y costo calculado desde los lotes consumidos.
+- Reporte de rentabilidad y punto de equilibrio; los costos fijos se ingresan para el período consultado y no se guardan como gastos contables.
 
 ### Requisitos del sistema
 - PHP 8.2
 - Composer
 - Node.js 18+ y npm
-- MySQL (o SQLite para pruebas locales)
+- SQLite (archivo `database/database.sqlite`)
 
 ### Instalación rápida (local)
 1. Clona el repositorio.

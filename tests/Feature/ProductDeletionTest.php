@@ -57,7 +57,7 @@ class ProductDeletionTest extends TestCase
         $this->assertFalse((bool) $product->active);
     }
 
-    public function test_product_not_linked_is_deleted()
+    public function test_product_with_inventory_lots_is_deactivated_instead_of_deleted()
     {
         $user = User::factory()->create();
 
@@ -78,6 +78,29 @@ class ProductDeletionTest extends TestCase
         $response = $this->actingAs($user)->delete(route('products.destroy', $product));
 
         $response->assertRedirect(route('products.index'));
+
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'active' => false]);
+        $this->assertDatabaseHas('inventory_lots', ['product_id' => $product->id]);
+    }
+
+    public function test_product_without_inventory_history_can_still_be_deleted()
+    {
+        $user = User::factory()->create();
+        $category = Category::create(['name' => 'Test', 'slug' => 'test', 'active' => true]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Producto Vacío',
+            'sku' => 'PV-01',
+            'price' => 1200,
+            'cost' => 600,
+            'stock' => 0,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->delete(route('products.destroy', $product))
+            ->assertRedirect(route('products.index'));
 
         $this->assertDatabaseMissing('products', ['id' => $product->id]);
     }

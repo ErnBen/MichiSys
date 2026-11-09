@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBusiness;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SaleProduct extends Model
 {
     use HasFactory;
+    use BelongsToBusiness;
 
     protected $table = 'sale_product';
 

@@ -9,14 +9,16 @@
             <dl class="row">
                 <dt class="col-sm-3">Nombre</dt>
                 <dd class="col-sm-9">{{ $product->name }}</dd>
+                <dt class="col-sm-3">Tipo y unidad</dt>
+                <dd class="col-sm-9">{{ $product->kind === 'ingredient' ? 'Insumo' : 'Vendible' }} ({{ $product->unit_label }})</dd>
                 <dt class="col-sm-3">Categoría</dt>
                 <dd class="col-sm-9">{{ $product->category?->name ?? 'Sin categoría' }}</dd>
                 <dt class="col-sm-3">Precio</dt>
                 <dd class="col-sm-9">{{ number_format($product->price, 2) }}</dd>
-                <dt class="col-sm-3">Costo</dt>
+                <dt class="col-sm-3">Costo por unidad base</dt>
                 <dd class="col-sm-9">{{ number_format($product->cost, 2) }}</dd>
                 <dt class="col-sm-3">Stock</dt>
-                <dd class="col-sm-9">{{ $product->stock }}</dd>
+                <dd class="col-sm-9">{{ $product->stock }} {{ $product->unit_label }}</dd>
                 <dt class="col-sm-3">Activo</dt>
                 <dd class="col-sm-9">{{ $product->active ? 'Sí' : 'No' }}</dd>
                 <dt class="col-sm-3">Descripción</dt>

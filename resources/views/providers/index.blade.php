@@ -3,7 +3,7 @@
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <h1>Proveedores</h1>
-        <a href="{{ route('providers.create') }}" class="btn btn-primary">Nuevo Proveedor</a>
+        <a href="{{ route('providers.create') }}" class="btn btn-primary">Añadir nuevo proveedor</a>
     </div>
 @stop
 @section('content')
@@ -27,6 +27,7 @@
                         <th>Email</th>
                         <th>Teléfono</th>
                         <th>Dirección</th>
+                        <th>Productos</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -38,6 +39,13 @@
                             <td>{{ $provider->phone }}</td>
                             <td>{{ $provider->address }}</td>
                             <td>
+                                @forelse($provider->products as $product)
+                                    <span class="badge badge-light">{{ $product->name }}</span>
+                                @empty
+                                    <span class="text-muted">Sin productos</span>
+                                @endforelse
+                            </td>
+                            <td>
                                 <a href="{{ route('providers.edit', $provider) }}" class="btn btn-sm btn-warning">Editar</a>
                                 <a href="{{ route('providers.show', $provider) }}" class="btn btn-sm btn-info">Ver</a>
                                 <form action="{{ route('providers.destroy', $provider) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar proveedor?');">
@@ -48,7 +56,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5">No hay proveedores registrados.</td></tr>
+                        <tr><td colspan="6">No hay proveedores registrados.</td></tr>
                     @endforelse
                 </tbody>
             </table>

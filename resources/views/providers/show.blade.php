@@ -15,6 +15,14 @@
                 <dd class="col-sm-9">{{ $provider->phone }}</dd>
                 <dt class="col-sm-3">Dirección</dt>
                 <dd class="col-sm-9">{{ $provider->address }}</dd>
+                <dt class="col-sm-3">Productos asociados</dt>
+                <dd class="col-sm-9">
+                    @forelse($provider->products as $product)
+                        <span class="badge badge-info mr-1">{{ $product->name }}</span>
+                    @empty
+                        <span class="text-muted">No hay productos asociados.</span>
+                    @endforelse
+                </dd>
             </dl>
             <a href="{{ route('providers.index') }}" class="btn btn-secondary">Volver</a>
         </div>

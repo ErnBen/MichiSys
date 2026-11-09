@@ -9,14 +9,11 @@
 <div class="form-group">
     <label>Contraseña</label>
     <input type="password" name="password" class="form-control" @if(!isset($user)) required @endif>
-    @if(isset($user))<small class="form-text text-muted">Dejar en blanco para mantener la contraseña actual.</small>@endif
-</div>
-<div class="form-group">
-    <label>Rol</label>
-    <select name="role" class="form-control" required>
-        <option value="cajero" {{ old('role', $user?->role) == 'cajero' ? 'selected' : '' }}>Empleado / Cajero</option>
-        <option value="admin" {{ old('role', $user?->role) == 'admin' ? 'selected' : '' }}>Administrador</option>
-    </select>
+    @if(isset($user))
+        <small class="form-text text-muted">Deja en blanco para conservar la contraseña. Si escribes una nueva, el cambio se aplica al guardar.</small>
+    @else
+        <small class="form-text text-muted">El cajero iniciará sesión con este correo y la contraseña que asignes.</small>
+    @endif
 </div>
 <div class="form-group form-check">
     <input type="hidden" name="active" value="0">

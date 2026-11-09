@@ -3,7 +3,7 @@
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <h1>Clientes</h1>
-        <a href="{{ route('clients.create') }}" class="btn btn-primary">Nuevo Cliente</a>
+        <a href="{{ route('clients.create') }}" class="btn btn-primary">Añadir cliente</a>
     </div>
 @stop
 @section('content')

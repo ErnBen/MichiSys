@@ -1,7 +1,7 @@
 @extends('adminlte::page')
-@section('title', 'Crear Cliente')
+@section('title', 'Añadir cliente')
 @section('content_header')
-    <h1>Crear Cliente</h1>
+    <h1>Añadir cliente</h1>
 @stop
 @section('content')
     @include('shared.alerts')

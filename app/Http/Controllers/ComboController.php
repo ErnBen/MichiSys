@@ -7,7 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ComboController extends Controller
 {
@@ -16,6 +16,7 @@ class ComboController extends Controller
         $search = $request->input('search');
 
         $combos = Combo::with('products')
+            ->withCount('sales')
             ->when($search, fn ($query) =>
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
@@ -29,9 +30,9 @@ class ComboController extends Controller
 
     public function create()
     {
-        $products = Product::where('active', true)->orderBy('name')->get();
+        $products = Product::where('active', true)->where('kind', 'product')->orderBy('name')->get();
 
-        return view('combos.create', compact('products'));
+        return view('combos.create', compact('products'))->with('combo', null);
     }
 
     public function store(Request $request)
@@ -42,8 +43,8 @@ class ComboController extends Controller
             'price' => 'required|numeric|min:0',
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
-            'products' => 'nullable|array',
-            'products.*' => 'exists:products,id',
+            'products' => 'required|array|min:1',
+            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)->where('kind', 'product')],
             'quantities' => 'nullable|array',
             'quantities.*' => 'integer|min:1',
         ]);
@@ -60,7 +61,10 @@ class ComboController extends Controller
         foreach ($request->input('products', []) as $productId) {
             $quantity = intval($request->input('quantities.' . $productId, 1));
             if ($quantity > 0) {
-                $sync[$productId] = ['quantity' => $quantity];
+                $sync[$productId] = [
+                    'quantity' => $quantity,
+                    'business_id' => $request->user()->business_id,
+                ];
             }
         }
 
@@ -76,7 +80,7 @@ class ComboController extends Controller
 
     public function edit(Combo $combo)
     {
-        $products = Product::where('active', true)->orderBy('name')->get();
+        $products = Product::where('active', true)->where('kind', 'product')->orderBy('name')->get();
 
         return view('combos.edit', compact('combo', 'products'));
     }
@@ -89,8 +93,8 @@ class ComboController extends Controller
             'price' => 'required|numeric|min:0',
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
-            'products' => 'nullable|array',
-            'products.*' => 'exists:products,id',
+            'products' => 'required|array|min:1',
+            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)->where('kind', 'product')],
             'quantities' => 'nullable|array',
             'quantities.*' => 'integer|min:1',
         ]);
@@ -111,7 +115,10 @@ class ComboController extends Controller
         foreach ($request->input('products', []) as $productId) {
             $quantity = intval($request->input('quantities.' . $productId, 1));
             if ($quantity > 0) {
-                $sync[$productId] = ['quantity' => $quantity];
+                $sync[$productId] = [
+                    'quantity' => $quantity,
+                    'business_id' => $request->user()->business_id,
+                ];
             }
         }
 
@@ -122,14 +129,13 @@ class ComboController extends Controller
 
     public function destroy(Combo $combo)
     {
-        // Evitar eliminación si el combo está vinculado a ventas para mantener integridad histórica.
-        $linkedToSales = DB::table('sale_combo')->where('combo_id', $combo->id)->exists();
+        $linkedToSales = $combo->sales()->exists();
 
         if ($linkedToSales) {
-            // Desactivar el combo en lugar de eliminarlo.
-            $combo->update(['active' => false]);
-
-            return Redirect::route('combos.index')->with('warning', 'El combo está vinculado a ventas y no puede eliminarse; se ha desactivado en su lugar.');
+            return Redirect::route('combos.index')->with(
+                'warning',
+                'Este combo tiene ventas asociadas y no se puede borrar para conservar el historial. Puedes desactivarlo.'
+            );
         }
 
         if ($combo->image) {
@@ -143,6 +149,13 @@ class ComboController extends Controller
 
     public function toggle(Combo $combo)
     {
+        if (! $combo->active && ! $combo->products()->exists()) {
+            return Redirect::route('combos.index')->with(
+                'warning',
+                'No se puede activar un combo sin productos. Edítalo y agrega al menos un producto vendible.'
+            );
+        }
+
         $combo->update(['active' => ! $combo->active]);
 
         return Redirect::route('combos.index')->with('success', 'Estado del combo actualizado correctamente.');

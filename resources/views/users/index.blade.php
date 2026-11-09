@@ -1,9 +1,9 @@
 @extends('adminlte::page')
-@section('title', 'Usuarios')
+@section('title', 'Cajeros')
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
-        <h1>Usuarios</h1>
-        <a href="{{ route('users.create') }}" class="btn btn-primary">Nuevo Usuario</a>
+        <h1>Cajeros</h1>
+        <a href="{{ route('users.create') }}" class="btn btn-primary">Crear cajero</a>
     </div>
 @stop
 @section('content')
@@ -12,7 +12,7 @@
         <div class="card-header">
             <form method="GET" action="{{ route('users.index') }}" class="form-inline">
                 <div class="input-group">
-                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Buscar usuarios...">
+                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Buscar cajeros...">
                     <div class="input-group-append">
                         <button class="btn btn-secondary" type="submit">Buscar</button>
                     </div>
@@ -22,13 +22,20 @@
         <div class="card-body table-responsive p-0">
             <table class="table table-hover">
                 <thead>
-                    <tr><th>Nombre</th><th>Email</th><th>Registrado</th><th>Acciones</th></tr>
+                    <tr><th>Nombre</th><th>Email de acceso</th><th>Estado</th><th>Registrado</th><th>Acciones</th></tr>
                 </thead>
                 <tbody>
                     @forelse($users as $user)
                         <tr>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
+                            <td>
+                                @if($user->active)
+                                    <span class="badge badge-success">Activo</span>
+                                @else
+                                    <span class="badge badge-secondary">Desactivado</span>
+                                @endif
+                            </td>
                             <td>{{ $user->created_at->format('d/m/Y') }}</td>
                             <td>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-warning">Editar</a>
@@ -40,7 +47,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4">No hay usuarios registrados.</td></tr>
+                        <tr><td colspan="5">No hay cajeros registrados en este negocio.</td></tr>
                     @endforelse
                 </tbody>
             </table>

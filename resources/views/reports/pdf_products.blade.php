@@ -17,7 +17,7 @@
             <td>{{ $product->name }}</td>
             <td>{{ $product->category?->name ?? 'Sin categoría' }}</td>
             <td>{{ number_format($product->price, 2) }}</td>
-            <td>{{ $product->stock }}</td>
+            <td>{{ $product->stock }} {{ $product->unit_label }}</td>
             <td>{{ $product->active ? 'Sí' : 'No' }}</td>
         </tr>
         @endforeach

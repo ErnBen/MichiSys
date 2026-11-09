@@ -123,6 +123,84 @@
         </div>
     </div>
     @endif
+
+    @if(!empty($expiringSoonProducts) && $expiringSoonProducts->isNotEmpty())
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Lotes próximos a vencer</h3></div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Lote</th>
+                                <th>Disponible</th>
+                                <th>Fecha de vencimiento</th>
+                                <th>Días restantes</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($expiringSoonProducts as $product)
+                                <tr>
+                                    <td>{{ $product->name }}</td>
+                                    <td>{{ $product->lot_number ?: 'Sin número' }}</td>
+                                    <td>{{ $product->available_quantity }}</td>
+                                    <td>{{ $product->fecha_vencimiento ? \Carbon\Carbon::parse($product->fecha_vencimiento)->format('d/m/Y') : 'Sin fecha' }}</td>
+                                    <td>
+                                        @if($product->days_remaining === 0)
+                                            Hoy
+                                        @else
+                                            {{ abs($product->days_remaining) }} {{ $product->days_remaining < 0 ? 'días vencidos' : 'días' }}
+                                        @endif
+                                    </td>
+                                    <td><span class="badge badge-{{ $product->expiration_badge }}">{{ $product->expiration_status }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if(!empty($expiredProducts) && $expiredProducts->isNotEmpty())
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Lotes vencidos</h3></div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Lote</th>
+                                <th>Disponible</th>
+                                <th>Fecha de vencimiento</th>
+                                <th>Días vencidos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($expiredProducts as $product)
+                                <tr>
+                                    <td>{{ $product->name }}</td>
+                                    <td>{{ $product->lot_number ?: 'Sin número' }}</td>
+                                    <td>{{ $product->available_quantity }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($product->fecha_vencimiento)->format('d/m/Y') }}</td>
+                                    <td>{{ abs($product->days_remaining) }} días</td>
+                                    <td><span class="badge badge-danger">Vencido</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 @stop
 
 @section('js')

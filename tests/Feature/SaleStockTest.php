@@ -82,4 +82,94 @@ class SaleStockTest extends TestCase
             ->assertSeeText('Productos bajo stock')
             ->assertSeeText('1');
     }
+
+    public function test_inventory_input_increases_stock_and_records_a_movement()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\Category::create(['name' => 'Test', 'slug' => 'test', 'active' => true]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Producto de inventario',
+            'sku' => 'INV-01',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 4,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)->post(route('inventory.store'), [
+            'product_id' => $product->id,
+            'quantity' => 3,
+            'type' => 'in',
+            'note' => 'Recepción de compra',
+        ])->assertRedirect(route('inventory.index'));
+
+        $this->assertSame(7, $product->fresh()->stock);
+        $this->assertDatabaseHas('inventory_movements', [
+            'product_id' => $product->id,
+            'quantity' => 3,
+            'type' => 'in',
+            'note' => 'Recepción de compra',
+        ]);
+    }
+
+    public function test_inventory_output_cannot_decrement_below_zero()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\Category::create(['name' => 'Test', 'slug' => 'test', 'active' => true]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Producto de inventario',
+            'sku' => 'INV-02',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 2,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)->post(route('inventory.store'), [
+            'product_id' => $product->id,
+            'quantity' => 3,
+            'type' => 'out',
+        ])->assertRedirect();
+
+        $this->assertSame(2, $product->fresh()->stock);
+        $this->assertDatabaseMissing('inventory_movements', [
+            'product_id' => $product->id,
+            'type' => 'out',
+        ]);
+    }
+
+    public function test_merma_decreases_stock_and_records_a_waste_movement()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\Category::create(['name' => 'Test', 'slug' => 'test', 'active' => true]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Producto dañado',
+            'sku' => 'MERMA-01',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 3,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)->post(route('inventory.store'), [
+            'product_id' => $product->id,
+            'quantity' => 2,
+            'type' => 'waste',
+            'note' => 'Producto vencido',
+        ])->assertRedirect(route('inventory.index'));
+
+        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertDatabaseHas('inventory_movements', [
+            'product_id' => $product->id,
+            'quantity' => 2,
+            'type' => 'waste',
+            'note' => 'Producto vencido',
+        ]);
+    }
 }

@@ -1,7 +1,7 @@
 @extends('adminlte::page')
-@section('title', 'Crear Proveedor')
+@section('title', 'Añadir nuevo proveedor')
 @section('content_header')
-    <h1>Crear Proveedor</h1>
+    <h1>Añadir nuevo proveedor</h1>
 @stop
 @section('content')
     @include('shared.alerts')

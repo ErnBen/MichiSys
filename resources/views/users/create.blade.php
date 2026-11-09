@@ -1,7 +1,7 @@
 @extends('adminlte::page')
-@section('title', 'Crear Usuario')
+@section('title', 'Crear cajero')
 @section('content_header')
-    <h1>Crear Usuario</h1>
+    <h1>Crear cajero</h1>
 @stop
 @section('content')
     @include('shared.alerts')

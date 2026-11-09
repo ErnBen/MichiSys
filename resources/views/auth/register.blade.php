@@ -6,7 +6,7 @@
 
         <x-validation-errors class="mb-4" />
 
-        <form method="POST" action="{{ route('register') }}">
+        <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
             @csrf
 
             <div>
@@ -17,6 +17,31 @@
             <div class="mt-4">
                 <x-label for="email" value="{{ __('Email') }}" />
                 <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            </div>
+
+            <div class="mt-4">
+                <x-label for="business_name" value="Nombre comercial" />
+                <x-input id="business_name" class="block mt-1 w-full" type="text" name="business_name" :value="old('business_name')" required />
+            </div>
+
+            <div class="mt-4">
+                <x-label for="responsible_name" value="Nombre del responsable" />
+                <x-input id="responsible_name" class="block mt-1 w-full" type="text" name="responsible_name" :value="old('responsible_name', old('name'))" required />
+            </div>
+
+            <div class="mt-4">
+                <x-label for="phone" value="Teléfono" />
+                <x-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" />
+            </div>
+
+            <div class="mt-4">
+                <x-label for="address" value="Dirección (opcional)" />
+                <x-input id="address" class="block mt-1 w-full" type="text" name="address" :value="old('address')" />
+            </div>
+
+            <div class="mt-4">
+                <x-label for="logo" value="Logo (opcional)" />
+                <input id="logo" class="block mt-1 w-full" type="file" name="logo" accept="image/*" />
             </div>
 
             <div class="mt-4">

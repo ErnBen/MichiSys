@@ -38,6 +38,6 @@
     @endif
 </div>
 <div class="form-check">
-    <input type="checkbox" name="active" class="form-check-input" id="active" {{ old('active', $combo?->active, true) ? 'checked' : '' }}>
+    <input type="checkbox" name="active" value="1" class="form-check-input" id="active" {{ old('active', $combo?->active, true) ? 'checked' : '' }}>
     <label class="form-check-label" for="active">Activo</label>
 </div>

@@ -24,6 +24,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
+                        <th>Tipo</th>
                         <th>Categoría</th>
                         <th>Precio</th>
                         <th>Stock</th>
@@ -35,9 +36,10 @@
                     @forelse($products as $product)
                         <tr>
                             <td>{{ $product->name }}</td>
+                            <td>{{ $product->kind === 'ingredient' ? 'Insumo' : 'Vendible' }} ({{ $product->unit_label }})</td>
                             <td>{{ $product->category?->name ?? 'Sin categoría' }}</td>
                             <td>{{ number_format($product->price, 2) }}</td>
-                            <td>{{ $product->stock }}</td>
+                            <td>{{ $product->stock }} {{ $product->unit_label }}</td>
                             <td>{!! $product->active ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>' !!}</td>
                             <td>
                                 <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-warning">Editar</a>
@@ -50,7 +52,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6">No hay productos registrados.</td></tr>
+                        <tr><td colspan="7">No hay productos registrados.</td></tr>
                     @endforelse
                 </tbody>
             </table>

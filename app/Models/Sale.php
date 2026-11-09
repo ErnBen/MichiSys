@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBusiness;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
     use HasFactory;
+    use BelongsToBusiness;
 
     protected $fillable = ['user_id', 'client_id', 'subtotal', 'discount', 'tax', 'total'];
 

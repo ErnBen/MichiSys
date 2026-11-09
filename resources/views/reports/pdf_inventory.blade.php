@@ -13,7 +13,7 @@
         <tr>
             <td>{{ $product->id }}</td>
             <td>{{ $product->name }}</td>
-            <td>{{ $product->stock }}</td>
+            <td>{{ $product->stock }} {{ $product->unit_label }}</td>
             <td>{{ $product->updated_at->format('d/m/Y H:i') }}</td>
         </tr>
         @endforeach

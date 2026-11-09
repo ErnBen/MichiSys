@@ -42,6 +42,8 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'business_name' => 'Negocio de prueba',
+            'responsible_name' => 'Test User',
             'password' => 'password',
             'password_confirmation' => 'password',
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
@@ -49,5 +51,12 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('businesses', [
+            'name' => 'Negocio de prueba',
+            'email' => 'test@example.com',
+        ]);
+        $registeredUser = \App\Models\User::where('email', 'test@example.com')->firstOrFail();
+        $this->assertSame('admin', $registeredUser->role);
+        $this->assertSame($registeredUser->business_id, $registeredUser->business->id);
     }
 }

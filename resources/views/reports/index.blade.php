@@ -11,5 +11,6 @@
         <div class="col-md-4"><a href="{{ route('reports.inventory') }}" target="_blank" class="btn btn-block btn-outline-warning mb-3">Reporte de Inventario</a></div>
         <div class="col-md-4"><a href="{{ route('reports.clients') }}" target="_blank" class="btn btn-block btn-outline-info mb-3">Reporte de Clientes</a></div>
         <div class="col-md-4"><a href="{{ route('reports.providers') }}" target="_blank" class="btn btn-block btn-outline-danger mb-3">Reporte de Proveedores</a></div>
+        <div class="col-md-4"><a href="{{ route('reports.profitability') }}" class="btn btn-block btn-outline-success mb-3">Costos, rentabilidad y punto de equilibrio</a></div>
     </div>
 @stop

@@ -33,7 +33,7 @@
             @foreach($sale->products as $item)
             <tr>
                 <td>{{ $item->product?->name ?? 'Producto eliminado' }}</td>
-                <td class="right">{{ $item->quantity }}</td>
+                <td class="right">{{ $item->quantity }} {{ $item->product?->unit_label ?? '' }}</td>
                 <td class="right">{{ number_format($item->price, 2) }}</td>
                 <td class="right">{{ number_format($item->subtotal, 2) }}</td>
             </tr>
