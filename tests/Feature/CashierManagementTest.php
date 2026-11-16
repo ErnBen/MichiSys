@@ -20,7 +20,7 @@ class CashierManagementTest extends TestCase
         $this->actingAs($admin)->post(route('users.store'), [
             'name' => 'Cajero A',
             'email' => 'cajero@example.test',
-            'password' => 'password123',
+            'password' => 'password1234',
             'active' => '1',
             'role' => 'admin',
         ])->assertRedirect(route('users.index'));
@@ -28,7 +28,7 @@ class CashierManagementTest extends TestCase
         $cashier = User::where('email', 'cajero@example.test')->firstOrFail();
         $this->assertSame('cajero', $cashier->role);
         $this->assertSame($business->id, $cashier->business_id);
-        $this->assertTrue(Hash::check('password123', $cashier->password));
+        $this->assertTrue(Hash::check('password1234', $cashier->password));
     }
 
     public function test_admin_can_change_cashier_password_and_deactivate_the_account(): void
@@ -44,14 +44,15 @@ class CashierManagementTest extends TestCase
         $this->actingAs($admin)->put(route('users.update', $cashier), [
             'name' => $cashier->name,
             'email' => $cashier->email,
-            'password' => 'new-password',
+            'password' => 'new-password12',
             'active' => '0',
+            'role' => 'dueno',
         ])->assertRedirect(route('users.index'));
 
         $cashier->refresh();
         $this->assertSame('cajero', $cashier->role);
         $this->assertFalse($cashier->active);
-        $this->assertTrue(Hash::check('new-password', $cashier->password));
+        $this->assertTrue(Hash::check('new-password12', $cashier->password));
     }
 
     public function test_cashier_cannot_access_administrative_user_management_and_is_sent_to_sales(): void
@@ -76,7 +77,7 @@ class CashierManagementTest extends TestCase
         $this->post('/login', [
             'email' => $cashier->email,
             'password' => 'password123',
-        ])->assertRedirect(route('dashboard', absolute: false));
+        ])->assertRedirect(route('sales.create', absolute: false));
 
         $this->get(route('dashboard'))->assertRedirect(route('sales.create'));
         $this->get(route('sales.create'))->assertOk();

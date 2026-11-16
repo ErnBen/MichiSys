@@ -37,7 +37,7 @@ class FortifyServiceProvider extends ServiceProvider
             if (
                 $user
                 && $user->active
-                && $user->business?->active
+                && ($user->role === 'superadmin' || $user->business?->active)
                 && Hash::check($request->input('password'), $user->password)
             ) {
                 return $user;

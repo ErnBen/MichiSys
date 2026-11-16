@@ -55,9 +55,10 @@ class CreateNewUser implements CreatesNewUsers
                     'name' => $input['name'],
                     'email' => $email,
                     'password' => Hash::make($input['password']),
-                    'role' => 'admin',
+                    'role' => 'dueno',
                     'active' => true,
                 ]);
+                $user->forceFill(['email_verified_at' => now()])->save();
 
                 $this->createTeam($user);
 

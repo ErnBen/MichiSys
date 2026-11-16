@@ -27,7 +27,13 @@
                                 <td>{{ $item->product_name }}</td>
                                 <td>{{ $item->lot_number ?: '—' }}</td>
                                 <td>{{ $item->expires_at?->format('d/m/Y') ?? '—' }}</td>
-                                <td>{{ $item->purchased_quantity ?? $item->quantity }} {{ $item->purchase_unit ?? $item->base_unit ?? 'pieza(s)' }} <small class="text-muted">({{ $item->quantity }} {{ $item->base_unit ?? 'unidad(es)' }})</small></td>
+                                <td>
+                                    {{ $item->purchased_quantity ?? $item->quantity }}
+                                    {{ ($item->purchase_unit ?? $item->base_unit ?? 'piece') === 'piece' ? 'Unidades' : ($item->purchase_unit ?? $item->base_unit) }}
+                                    <small class="text-muted">
+                                        ({{ $item->quantity }} {{ ($item->base_unit ?? 'piece') === 'piece' ? 'Unidades' : $item->base_unit }})
+                                    </small>
+                                </td>
                                 <td>{{ number_format($item->unit_cost, 2) }}</td>
                                 <td>{{ number_format($item->subtotal, 2) }}</td>
                             </tr>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 
 class ClientController extends Controller
 {
@@ -69,6 +70,12 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        if ($client->receivables()->exists()) {
+            throw ValidationException::withMessages([
+                'client' => 'No se puede eliminar un cliente con cuentas por cobrar; su historial debe conservarse.',
+            ]);
+        }
+
         $client->delete();
 
         return Redirect::route('clients.index')->with('success', 'Cliente eliminado correctamente.');

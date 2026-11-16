@@ -56,7 +56,9 @@ Checklist mínima para despliegue en producción:
 
 10. Post-despliegue
    - Verificar que la aplicación responde en `APP_URL`.
-   - Crear usuario admin si es necesario para pruebas: usar seed o `php artisan tinker`.
+   - Crear explícitamente la cuenta de plataforma con `php artisan michisys:create-superadmin admin@tu-dominio.example`. El comando pide una contraseña oculta y confirmación; no hay credenciales predeterminadas ni un formulario web para este rol.
+   - Iniciar sesión como superadministrador, crear un negocio y asignar la cuenta de su dueño desde el panel de plataforma.
+   - No ejecutar seeders para generar cuentas privilegiadas ni reutilizar una cuenta de negocio como superadministrador.
 
    ## Despliegue automático (deshabilitado)
 

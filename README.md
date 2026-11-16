@@ -65,7 +65,7 @@ Aplicación Laravel para gestionar negocios, ventas, compras, inventario, produc
 Requisitos principales:
 - Registrar ventas y descontar stock automáticamente.
 - Alertas de stock bajo (cuando stock <= stock_minimo).
-- Roles `admin` y `cajero` con permisos diferenciados.
+- Roles `superadmin`, `dueno` y `cajero` con permisos diferenciados y aislamiento por negocio.
 - Comprobante interno imprimible y descarga PDF.
 - Compras que registran costos históricos, lotes y vencimientos; el consumo de inventario prioriza lotes FEFO.
 - Insumos con unidad base en piezas, gramos o mililitros; las compras convierten automáticamente kg a g y l a ml.
@@ -122,6 +122,21 @@ Se añadieron acciones de GitHub Actions en `.github/workflows/ci.yml` que ejecu
 
 ### Despliegue (resumen)
 Ver `DEPLOYMENT.md` para una checklist paso a paso y comandos recomendados.
+
+### Roles y alta inicial
+
+Después de respaldar la base de datos, aplicar las migraciones (`php artisan migrate --force`) y desplegar el código:
+
+1. Crear la cuenta exclusiva de plataforma desde una consola segura:
+   ```
+   php artisan michisys:create-superadmin admin@tu-dominio.example
+   ```
+   El comando solicita la contraseña dos veces de forma oculta y exige al menos 12 caracteres. No existe registro web para el rol `superadmin`; el comando crea una cuenta nueva sin negocio asociado. No reutilices una cuenta de dueño o cajero.
+2. Iniciar sesión con esa cuenta y abrir **Administración de plataforma → Crear negocio y dueño**. Indicar los datos del negocio, el correo de acceso y una contraseña inicial segura para el dueño.
+3. El dueño inicia sesión con el correo y la contraseña asignados, completa/actualiza los datos comerciales y crea cajeros desde **Cajeros**. Las contraseñas de cajeros deben tener al menos 12 caracteres.
+4. El cajero utiliza esas credenciales en el formulario de inicio de sesión compartido. Tras autenticarse se dirige directamente al punto de venta.
+
+El superadministrador debe pulsar **Seleccionar** en un negocio antes de entrar a sus módulos operativos. Las anulaciones de venta conservan el registro, el motivo, el usuario y la fecha; las ventas a crédito con pagos aplicados no se pueden anular.
 
 ### Contacto
 Si necesitas que empuje los cambios al remoto o que ajuste la configuración del CI, dímelo y lo hago.

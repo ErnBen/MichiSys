@@ -77,7 +77,7 @@ class RolePermissionsTest extends TestCase
         $this->assertSame(10, $product->fresh()->stock);
     }
 
-    public function test_cajero_cannot_view_another_cashiers_sale_in_the_same_business()
+    public function test_cajero_can_view_sales_from_their_business()
     {
         $owner = User::factory()->create(['role' => 'cajero']);
         $sale = Sale::create([
@@ -91,8 +91,8 @@ class RolePermissionsTest extends TestCase
 
         $this->actingAs($otherCashier)
             ->get(route('sales.show', $sale))
-            ->assertNotFound();
-        $this->get(route('sales.receipt', $sale))->assertNotFound();
+            ->assertOk();
+        $this->get(route('sales.receipt', $sale))->assertOk();
     }
 
     public function test_admin_cannot_manage_a_user_from_another_business()

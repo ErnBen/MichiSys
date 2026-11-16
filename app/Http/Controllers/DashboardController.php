@@ -14,6 +14,10 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        if ($request->user()->role === 'superadmin') {
+            return redirect()->route('superadmin.businesses.index');
+        }
+
         if ($request->user()->role === 'cajero') {
             return redirect()->route('sales.create');
         }
@@ -21,7 +25,7 @@ class DashboardController extends Controller
         $totalProducts = Product::count();
         $totalCategories = Category::count();
         $totalCombos = Combo::count();
-        $totalSales = Sale::count();
+        $totalSales = Sale::whereNull('cancelled_at')->count();
         $totalClients = Client::count();
         $warningDays = config('michisys.expiration_warning_days', 30);
         $criticalDays = config('michisys.expiration_critical_days', 7);
@@ -78,7 +82,8 @@ class DashboardController extends Controller
             ->values();
         $expiredProducts = $expirationLots->filter(fn ($lot) => $lot->days_remaining < 0)->values();
 
-        $salesChartData = Sale::selectRaw('DATE(created_at) as day, SUM(total) as total')
+        $salesChartData = Sale::whereNull('cancelled_at')
+            ->selectRaw('DATE(created_at) as day, SUM(total) as total')
             ->groupBy('day')
             ->orderBy('day')
             ->limit(10)
@@ -86,7 +91,8 @@ class DashboardController extends Controller
             ->map(fn ($sale) => $sale->total)
             ->toArray();
 
-        $salesChartLabels = Sale::selectRaw('DATE(created_at) as day')
+        $salesChartLabels = Sale::whereNull('cancelled_at')
+            ->selectRaw('DATE(created_at) as day')
             ->groupBy('day')
             ->orderBy('day')
             ->limit(10)

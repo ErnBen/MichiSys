@@ -8,11 +8,11 @@
 </div>
 <div class="form-group">
     <label>Contraseña</label>
-    <input type="password" name="password" class="form-control" @if(!isset($user)) required @endif>
+    <input type="password" name="password" class="form-control" minlength="12" autocomplete="new-password" @if(!isset($user)) required @endif>
     @if(isset($user))
-        <small class="form-text text-muted">Deja en blanco para conservar la contraseña. Si escribes una nueva, el cambio se aplica al guardar.</small>
+        <small class="form-text text-muted">Deja en blanco para conservar la contraseña. Una nueva debe tener al menos 12 caracteres.</small>
     @else
-        <small class="form-text text-muted">El cajero iniciará sesión con este correo y la contraseña que asignes.</small>
+        <small class="form-text text-muted">Usa al menos 12 caracteres. El cajero iniciará sesión con este correo y la contraseña que asignes.</small>
     @endif
 </div>
 <div class="form-group form-check">

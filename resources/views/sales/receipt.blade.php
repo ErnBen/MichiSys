@@ -17,11 +17,29 @@
         <h2>MichiSys</h2>
         <div>Comprobante interno de venta</div>
         <div>Venta #{{ $sale->id }} — {{ $sale->created_at->format('d/m/Y H:i') }}</div>
+        @if($sale->cancelled_at)
+            <h2>ANULADA</h2>
+            <div>{{ $sale->cancelled_at->format('d/m/Y H:i') }} — {{ $sale->cancellation_reason }}</div>
+        @endif
     </div>
 
     <div style="margin-top:10px;">
         <strong>Cliente:</strong> {{ $sale->client?->name ?? 'Consumidor Final' }}<br>
-        <strong>Cajero:</strong> {{ $sale->user?->name ?? 'N/A' }}
+        <strong>Cajero:</strong> {{ $sale->user?->name ?? 'N/A' }}<br>
+        <strong>Método de pago:</strong> {{ $sale->payment_method_label }}<br>
+        @if($sale->payment_reference)
+            <strong>Referencia:</strong> {{ $sale->payment_reference }}<br>
+        @endif
+        @if($sale->payment_entity)
+            <strong>Banco / plataforma:</strong> {{ $sale->payment_entity }}<br>
+        @endif
+        @if($sale->payment_paid_at)
+            <strong>Fecha de pago:</strong> {{ $sale->payment_paid_at->format('d/m/Y H:i') }}<br>
+        @endif
+        @if($sale->cash_received !== null)
+            <strong>Dinero recibido:</strong> Gs. {{ number_format($sale->cash_received, 0, ',', '.') }}<br>
+            <strong>Vuelto:</strong> Gs. {{ number_format($sale->change_due, 0, ',', '.') }}<br>
+        @endif
     </div>
 
     <h4>Productos</h4>
@@ -60,12 +78,20 @@
 
     <div style="margin-top: 10px; width: 300px; float: right;">
         <table>
-            <tr><td>Subtotal</td><td class="right">{{ number_format($sale->subtotal, 2) }}</td></tr>
-            <tr><td>Descuento</td><td class="right">{{ number_format($sale->discount, 2) }}</td></tr>
-            <tr><td>IVA</td><td class="right">{{ number_format($sale->tax, 2) }}</td></tr>
-            <tr><th>Total</th><th class="right">{{ number_format($sale->total, 2) }}</th></tr>
+            <tr><td>Subtotal</td><td class="right">Gs. {{ number_format($sale->subtotal, 0, ',', '.') }}</td></tr>
+            <tr><td>Descuento</td><td class="right">Gs. {{ number_format($sale->discount, 0, ',', '.') }}</td></tr>
+            @if((float) $sale->tax > 0)
+                <tr><td>Impuesto registrado en venta histórica</td><td class="right">Gs. {{ number_format($sale->tax, 0, ',', '.') }}</td></tr>
+            @endif
+            <tr><th>Total (precio final)</th><th class="right">Gs. {{ number_format($sale->total, 0, ',', '.') }}</th></tr>
         </table>
     </div>
+    @if($sale->payment_notes)
+        <p><strong>Observaciones de pago:</strong> {{ $sale->payment_notes }}</p>
+    @endif
+    @if($sale->receivable)
+        <p><strong>Saldo pendiente:</strong> Gs. {{ number_format($sale->receivable->balance, 0, ',', '.') }}</p>
+    @endif
 
     <div style="clear: both; margin-top: 40px; text-align: center;">
         <small>Este comprobante es interno y no constituye factura electrónica.</small>

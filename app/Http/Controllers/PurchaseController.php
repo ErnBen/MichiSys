@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Category;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
@@ -28,9 +29,62 @@ class PurchaseController extends Controller
     public function create()
     {
         $providers = Provider::orderBy('name')->get();
-        $products = Product::where('active', true)->orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+        $oldItems = old('items', []);
+        $selectedProductIds = collect($oldItems)->pluck('product_id')->filter()->unique();
+        $selectedProducts = Product::whereIn('id', $selectedProductIds)->get()->keyBy('id');
+        $hasProducts = Product::where('active', true)->exists();
 
-        return view('purchases.create', compact('providers', 'products'));
+        return view('purchases.create', compact(
+            'providers',
+            'categories',
+            'oldItems',
+            'selectedProducts',
+            'hasProducts'
+        ));
+    }
+
+    public function productSearch(Request $request)
+    {
+        $businessId = $request->user()->business_id;
+        $filters = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('business_id', $businessId)],
+            'provider_id' => ['nullable', Rule::exists('providers', 'id')->where('business_id', $businessId)],
+        ]);
+        $search = trim($filters['search'] ?? '');
+
+        if ($search === '' && empty($filters['category_id']) && empty($filters['provider_id'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $products = Product::query()
+            ->where('active', true)
+            ->when(isset($filters['category_id']), fn ($query) => $query->where('category_id', $filters['category_id']))
+            ->when(isset($filters['provider_id']), fn ($query) => $query->whereHas('providers', fn ($query) =>
+                $query->where('providers.id', $filters['provider_id'])
+                    ->where('providers.business_id', $businessId)
+            ))
+            ->when($search !== '', fn ($query) => $query->where(fn ($query) =>
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+            ))
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'category_id', 'name', 'sku', 'unit', 'stock', 'cost'])
+            ->map(fn (Product $product): array => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'unit' => $product->unit,
+                'unit_label' => $product->unit_label,
+                'stock' => $product->stock,
+                'cost' => $product->cost,
+                'category' => $product->category?->name,
+            ]);
+
+        return response()->json(['data' => $products]);
     }
 
     public function store(Request $request, InventoryService $inventory)

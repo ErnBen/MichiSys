@@ -33,7 +33,7 @@
         <div class="form-group">
             <label for="unit">Unidad base</label>
             <select id="unit" name="unit" class="form-control" required>
-                <option value="piece" @selected(old('unit', $product->unit ?? 'piece') === 'piece')>Pieza(s)</option>
+                <option value="piece" @selected(old('unit', $product->unit ?? 'piece') === 'piece')>Unidades (unid.)</option>
                 <option value="g" @selected(old('unit', $product->unit ?? 'piece') === 'g')>Gramos (g)</option>
                 <option value="ml" @selected(old('unit', $product->unit ?? 'piece') === 'ml')>Mililitros (ml)</option>
             </select>

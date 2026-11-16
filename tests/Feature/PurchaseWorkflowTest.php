@@ -104,6 +104,70 @@ class PurchaseWorkflowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_purchase_product_search_filters_by_code_category_provider_and_business_with_limit(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+        $food = Category::create(['name' => 'Alimentos', 'slug' => 'alimentos', 'active' => true]);
+        $accessories = Category::create(['name' => 'Accesorios', 'slug' => 'accesorios', 'active' => true]);
+        $provider = Provider::create(['name' => 'Proveedor habitual']);
+        $otherProvider = Provider::create(['name' => 'Otro proveedor']);
+
+        for ($index = 1; $index <= 22; $index++) {
+            $product = Product::create([
+                'category_id' => $food->id,
+                'name' => "Croqueta {$index}",
+                'sku' => "CROQ-{$index}",
+                'price' => 1000,
+                'cost' => 500,
+                'stock' => 5,
+                'stock_minimo' => 1,
+                'active' => true,
+            ]);
+            $product->providers()->attach($provider->id);
+        }
+
+        $matchingProduct = Product::create([
+            'category_id' => $accessories->id,
+            'name' => 'Correa especial',
+            'sku' => 'CORREA-01',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 5,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+        $matchingProduct->providers()->attach($otherProvider->id);
+
+        $otherBusiness = Business::create(['name' => 'Otro negocio', 'owner_name' => 'Otro dueño']);
+        $otherAdmin = User::factory()->create(['business_id' => $otherBusiness->id, 'role' => 'admin']);
+        $this->actingAs($otherAdmin);
+        $otherCategory = Category::create(['name' => 'Alimentos', 'slug' => 'otro-alimento', 'active' => true]);
+        Product::create([
+            'category_id' => $otherCategory->id,
+            'name' => 'Croqueta externa',
+            'sku' => 'CROQ-EXTERNA',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 5,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)->getJson(route('purchases.products.search', [
+            'search' => 'CROQ',
+            'category_id' => $food->id,
+            'provider_id' => $provider->id,
+        ]))->assertOk()->assertJsonCount(20, 'data')
+            ->assertJsonMissing(['name' => 'Correa especial'])
+            ->assertJsonMissing(['name' => 'Croqueta externa']);
+
+        $this->get(route('purchases.create'))
+            ->assertOk()
+            ->assertSee('Buscar productos para agregar')
+            ->assertDontSee('Croqueta 1');
+    }
+
     public function test_purchase_cannot_use_another_business_provider()
     {
         $admin = User::factory()->create(['role' => 'admin']);

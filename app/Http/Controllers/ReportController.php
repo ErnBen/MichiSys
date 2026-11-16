@@ -30,7 +30,7 @@ class ReportController extends Controller
 
     public function sales()
     {
-        $sales = Sale::with('client', 'user')->orderByDesc('created_at')->get();
+        $sales = Sale::with('client', 'user', 'canceller')->orderByDesc('created_at')->get();
         $pdf = Pdf::loadView('reports.pdf_sales', compact('sales'));
         return $pdf->download('reporte-ventas.pdf');
     }
@@ -67,7 +67,9 @@ class ReportController extends Controller
         $to = $filters['to'] ?? today()->toDateString();
         $start = "{$from} 00:00:00";
         $end = "{$to} 23:59:59";
-        $salesQuery = fn (): Builder => Sale::query()->whereBetween('created_at', [$start, $end]);
+        $salesQuery = fn (): Builder => Sale::query()
+            ->whereNull('cancelled_at')
+            ->whereBetween('created_at', [$start, $end]);
         $totals = $salesQuery()
             ->selectRaw('COUNT(*) as sales_count, COALESCE(SUM(subtotal), 0) as subtotal, COALESCE(SUM(discount), 0) as discounts')
             ->first();
@@ -77,6 +79,7 @@ class ReportController extends Controller
             ->leftJoin('inventory_lots', 'inventory_lots.id', '=', 'inventory_movements.lot_id')
             ->where('inventory_movements.type', 'out')
             ->whereColumn('sales.business_id', 'inventory_movements.business_id')
+            ->whereNull('sales.cancelled_at')
             ->whereBetween('sales.created_at', [$start, $end])
             ->selectRaw('COALESCE(SUM(CASE WHEN inventory_movements.lot_id IS NOT NULL THEN inventory_movements.quantity * COALESCE(inventory_lots.base_unit_cost, inventory_lots.unit_cost, 0) ELSE 0 END), 0) as cost_of_goods')
             ->first();

@@ -11,13 +11,14 @@ class EnsureUserHasRole
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
+        $role = $user?->role === 'admin' ? 'dueno' : $user?->role;
 
         abort_unless(
             $user
                 && $user->active
-                && $user->business_id
-                && $user->business?->active
-                && in_array($user->role, $roles, true),
+                && in_array($role, $roles, true)
+                && ($role === 'superadmin'
+                    || ($user->business_id && $user->business?->active)),
             403
         );
 

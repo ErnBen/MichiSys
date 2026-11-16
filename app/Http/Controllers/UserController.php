@@ -37,14 +37,15 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:12',
             'active' => 'sometimes|boolean',
         ]);
 
         $data['password'] = Hash::make($data['password']);
         $data['role'] = 'cajero';
         $data['active'] = $request->boolean('active');
-        $request->user()->business->users()->create($data);
+        $cashier = $request->user()->business->users()->create($data);
+        $cashier->forceFill(['email_verified_at' => now()])->save();
 
         return Redirect::route('users.index')->with('success', 'Usuario creado correctamente.');
     }
@@ -70,7 +71,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:12',
             'active' => 'sometimes|boolean',
         ]);
 
@@ -90,10 +91,9 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $this->ensureManagedCashier($user);
+        $user->update(['active' => false]);
 
-        $user->delete();
-
-        return Redirect::route('users.index')->with('success', 'Usuario eliminado correctamente.');
+        return Redirect::route('users.index')->with('success', 'Cajero desactivado; su historial se conserva.');
     }
 
     private function ensureManagedCashier(User $user): void

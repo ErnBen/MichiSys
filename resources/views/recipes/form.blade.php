@@ -14,7 +14,7 @@
 <div class="form-group">
     <label for="yield_quantity">Rendimiento en unidad base del producto final</label>
     <input id="yield_quantity" type="number" name="yield_quantity" class="form-control" min="1" step="1" value="{{ old('yield_quantity', $recipe->yield_quantity ?? 1) }}" required>
-    <small class="form-text text-muted">Las cantidades de ingredientes se registran en g, ml o piezas. La producción debe respetar este rendimiento para evitar fracciones de unidad base.</small>
+    <small class="form-text text-muted">Las cantidades de ingredientes se registran en g, ml o unidades. La producción debe respetar este rendimiento para evitar fracciones de unidad base.</small>
     @error('yield_quantity')<small class="text-danger">{{ $message }}</small>@enderror
 </div>
 <div class="form-group">

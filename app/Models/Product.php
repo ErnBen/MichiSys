@@ -100,7 +100,7 @@ class Product extends Model
         return match ($this->unit) {
             'g' => 'g',
             'ml' => 'ml',
-            default => 'pieza(s)',
+            default => 'Unidades',
         };
     }
 }

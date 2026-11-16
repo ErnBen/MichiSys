@@ -64,7 +64,9 @@ class InventoryLotWorkflowTest extends TestCase
             'type' => 'out',
         ]);
 
-        $this->delete(route('sales.destroy', $sale))->assertRedirect(route('sales.index'));
+        $this->delete(route('sales.destroy', $sale), [
+            'cancellation_reason' => 'Anulación de prueba del inventario',
+        ])->assertRedirect(route('sales.index'));
 
         $this->assertSame(3, $earlierLot->fresh()->available_quantity);
         $this->assertSame(5, $laterLot->fresh()->available_quantity);

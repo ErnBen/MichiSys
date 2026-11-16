@@ -38,7 +38,7 @@ class UserFactory extends Factory
             'profile_photo_path' => null,
             'current_team_id' => null,
             'business_id' => Business::query()->value('id'),
-            'role' => 'admin',
+            'role' => 'dueno',
             'active' => true,
         ];
     }

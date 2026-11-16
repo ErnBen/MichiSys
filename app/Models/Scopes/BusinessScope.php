@@ -11,7 +11,12 @@ class BusinessScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $businessId = Auth::user()?->business_id;
+        $user = Auth::user();
+        $businessId = $user?->business_id;
+
+        if (! $businessId && $user?->role === 'superadmin') {
+            $businessId = request()->session()->get('managed_business_id');
+        }
 
         if ($businessId) {
             $builder->where($model->qualifyColumn('business_id'), $businessId);

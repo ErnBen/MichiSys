@@ -21,7 +21,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Stock actual</h3></div>
-                <div class="card-body p-0">
+                <div class="card-body p-0 table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr>
@@ -43,7 +43,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Historial de movimientos</h3></div>
-                <div class="card-body p-0">
+                <div class="card-body p-0 table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th><th>Fecha</th></tr>

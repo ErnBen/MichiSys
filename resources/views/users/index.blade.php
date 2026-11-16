@@ -39,11 +39,13 @@
                             <td>{{ $user->created_at->format('d/m/Y') }}</td>
                             <td>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-warning">Editar</a>
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar usuario?');">
+                                @if($user->active)
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Desactivar este cajero? Su historial se conservará.');">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-sm btn-danger">Eliminar</button>
-                                </form>
+                                        <button class="btn btn-sm btn-danger">Desactivar</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty

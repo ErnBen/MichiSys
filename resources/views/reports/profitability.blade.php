@@ -54,19 +54,20 @@
         <div class="card-header"><h3 class="card-title">Ventas del período</h3></div>
         <div class="card-body table-responsive">
             <table class="table table-hover">
-                <thead><tr><th>Venta</th><th>Fecha</th><th>Vendedor</th><th>Venta neta</th><th>Costo</th><th>Margen bruto</th></tr></thead>
+                <thead><tr><th>Venta</th><th>Fecha</th><th>Vendedor</th><th>Método de pago</th><th>Venta neta</th><th>Costo</th><th>Margen bruto</th></tr></thead>
                 <tbody>
                     @forelse($saleRows as $row)
                         <tr>
                             <td>#{{ $row['sale']->id }}</td>
                             <td>{{ $row['sale']->created_at->format('d/m/Y H:i') }}</td>
                             <td>{{ $row['sale']->user?->name ?? '—' }}</td>
+                            <td>{{ $row['sale']->payment_method_label }}</td>
                             <td>{{ number_format($row['net_sales'], 2) }}</td>
                             <td>{{ number_format($row['cost'], 2) }}</td>
                             <td>{{ number_format($row['profit'], 2) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center">No hay ventas en el período seleccionado.</td></tr>
+                        <tr><td colspan="7" class="text-center">No hay ventas en el período seleccionado.</td></tr>
                     @endforelse
                 </tbody>
             </table>

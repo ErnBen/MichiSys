@@ -14,14 +14,52 @@
                 <dd class="col-sm-9">{{ $sale->user?->name ?? 'N/A' }}</dd>
                 <dt class="col-sm-3">Fecha</dt>
                 <dd class="col-sm-9">{{ $sale->created_at->format('d/m/Y H:i') }}</dd>
+                @if($sale->cancelled_at)
+                    <dt class="col-sm-3 text-danger">Estado</dt>
+                    <dd class="col-sm-9 text-danger">Anulada el {{ $sale->cancelled_at->format('d/m/Y H:i') }} por {{ $sale->canceller?->name ?? 'usuario no disponible' }}</dd>
+                    <dt class="col-sm-3">Motivo de anulación</dt>
+                    <dd class="col-sm-9">{{ $sale->cancellation_reason }}</dd>
+                @endif
+                <dt class="col-sm-3">Método de pago</dt>
+                <dd class="col-sm-9">{{ $sale->payment_method_label }}</dd>
+                @if($sale->payment_reference)
+                    <dt class="col-sm-3">Referencia</dt>
+                    <dd class="col-sm-9">{{ $sale->payment_reference }}</dd>
+                @endif
+                @if($sale->payment_entity)
+                    <dt class="col-sm-3">Banco / plataforma</dt>
+                    <dd class="col-sm-9">{{ $sale->payment_entity }}</dd>
+                @endif
+                @if($sale->payment_paid_at)
+                    <dt class="col-sm-3">Fecha de pago</dt>
+                    <dd class="col-sm-9">{{ $sale->payment_paid_at->format('d/m/Y H:i') }}</dd>
+                @endif
+                @if($sale->cash_received !== null)
+                    <dt class="col-sm-3">Recibido</dt>
+                    <dd class="col-sm-9">Gs. {{ number_format($sale->cash_received, 0, ',', '.') }}</dd>
+                    <dt class="col-sm-3">Vuelto</dt>
+                    <dd class="col-sm-9">Gs. {{ number_format($sale->change_due, 0, ',', '.') }}</dd>
+                @endif
                 <dt class="col-sm-3">Subtotal</dt>
-                <dd class="col-sm-9">{{ number_format($sale->subtotal, 2) }}</dd>
+                <dd class="col-sm-9">Gs. {{ number_format($sale->subtotal, 0, ',', '.') }}</dd>
                 <dt class="col-sm-3">Descuento</dt>
-                <dd class="col-sm-9">{{ number_format($sale->discount, 2) }}</dd>
-                <dt class="col-sm-3">IVA</dt>
-                <dd class="col-sm-9">{{ number_format($sale->tax, 2) }}</dd>
+                <dd class="col-sm-9">Gs. {{ number_format($sale->discount, 0, ',', '.') }}</dd>
+                @if((float) $sale->tax > 0)
+                    <dt class="col-sm-3">Impuesto registrado en venta histórica</dt>
+                    <dd class="col-sm-9">Gs. {{ number_format($sale->tax, 0, ',', '.') }}</dd>
+                @endif
                 <dt class="col-sm-3">Total</dt>
-                <dd class="col-sm-9">{{ number_format($sale->total, 2) }}</dd>
+                <dd class="col-sm-9 font-weight-bold">Gs. {{ number_format($sale->total, 0, ',', '.') }}</dd>
+                @if($sale->payment_notes)
+                    <dt class="col-sm-3">Observaciones de pago</dt>
+                    <dd class="col-sm-9">{{ $sale->payment_notes }}</dd>
+                @endif
+                @if($sale->receivable)
+                    <dt class="col-sm-3">Saldo pendiente</dt>
+                    <dd class="col-sm-9">Gs. {{ number_format($sale->receivable->balance, 0, ',', '.') }}
+                        <a href="{{ route('receivables.show', $sale->receivable) }}">Ver deuda y pagos</a>
+                    </dd>
+                @endif
             </dl>
         </div>
     </div>
@@ -66,5 +104,5 @@
         </div>
     </div>
     <a href="{{ route('sales.index') }}" class="btn btn-secondary">Volver</a>
-    <a href="{{ route('sales.receipt', $sale) }}" target="_blank" class="btn btn-primary">Imprimir comprobante</a>
+    <a href="{{ route('sales.receipt', $sale) }}" target="_blank" rel="noopener" class="btn btn-primary">Imprimir comprobante</a>
 @stop

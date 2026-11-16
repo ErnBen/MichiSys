@@ -13,6 +13,12 @@ return [
 
     'menu' => [
         [
+            'text' => 'Administración de plataforma',
+            'route' => 'superadmin.businesses.index',
+            'icon' => 'fas fa-fw fa-building',
+            'can' => 'manage-platform',
+        ],
+        [
             'text' => 'Panel Principal',
             'route' => 'dashboard',
             'icon' => 'fas fa-fw fa-tachometer-alt',
@@ -46,6 +52,12 @@ return [
             'route' => 'sales.index',
             'icon' => 'fas fa-fw fa-cash-register',
             'can' => 'use-sales',
+        ],
+        [
+            'text' => 'Cuentas por cobrar',
+            'route' => 'receivables.index',
+            'icon' => 'fas fa-fw fa-file-invoice-dollar',
+            'can' => 'manage-business',
         ],
         [
             'text' => 'Consultar precios',
@@ -93,6 +105,12 @@ return [
             'text' => 'Cajeros',
             'route' => 'users.index',
             'icon' => 'fas fa-fw fa-users-cog',
+            'can' => 'manage-business',
+        ],
+        [
+            'text' => 'Datos del negocio',
+            'route' => 'business.settings.edit',
+            'icon' => 'fas fa-fw fa-store',
             'can' => 'manage-business',
         ],
         [

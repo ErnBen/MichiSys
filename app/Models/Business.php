@@ -13,6 +13,8 @@ class Business extends Model
         'email',
         'phone',
         'address',
+        'ruc',
+        'description',
         'logo',
         'active',
     ];
