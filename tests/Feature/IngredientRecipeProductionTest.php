@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Business;
 use App\Models\Category;
 use App\Models\InventoryLot;
 use App\Models\InventoryMovement;
@@ -123,6 +124,33 @@ class IngredientRecipeProductionTest extends TestCase
         $this->assertSame(0, Production::count());
         $this->assertSame(0, InventoryLot::where('product_id', $finishedProduct->id)->count());
         $this->assertSame(0, InventoryMovement::where('type', 'production')->count());
+    }
+
+    public function test_recipe_search_only_returns_active_recipes_from_the_current_business(): void
+    {
+        $businessA = Business::create(['name' => 'Tienda A', 'owner_name' => 'Dueño A']);
+        $businessB = Business::create(['name' => 'Tienda B', 'owner_name' => 'Dueño B']);
+        $ownerA = User::factory()->create(['business_id' => $businessA->id, 'role' => 'dueno']);
+        $ownerB = User::factory()->create(['business_id' => $businessB->id, 'role' => 'dueno']);
+
+        $this->actingAs($ownerA);
+        $categoryA = Category::create(['name' => 'Categoría A', 'slug' => 'categoria-a', 'active' => true]);
+        $productA = $this->createProduct($categoryA, 'Producto compartido A', 'product', 'piece');
+        $recipeA = Recipe::create(['product_id' => $productA->id, 'yield_quantity' => 1]);
+
+        $this->actingAs($ownerB);
+        $categoryB = Category::create(['name' => 'Categoría B', 'slug' => 'categoria-b', 'active' => true]);
+        $productB = $this->createProduct($categoryB, 'Producto compartido B', 'product', 'piece');
+        Recipe::create(['product_id' => $productB->id, 'yield_quantity' => 1]);
+
+        $this->actingAs($ownerA)
+            ->getJson(route('productions.recipes.search', ['search' => 'Producto compartido']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $recipeA->id);
+
+        $this->getJson(route('productions.recipes.search', ['search' => 'a']))
+            ->assertUnprocessable();
     }
 
     private function createProduct(Category $category, string $name, string $kind, string $unit): Product

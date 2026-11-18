@@ -17,8 +17,12 @@ class BusinessAdminController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search'));
+        $status = in_array($request->input('status'), ['active', 'inactive'], true)
+            ? $request->input('status')
+            : '';
         $businesses = Business::query()
             ->withCount('users')
+            ->when($status !== '', fn ($query) => $query->where('active', $status === 'active'))
             ->when($search !== '', fn ($query) => $query->where(fn ($query) =>
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('owner_name', 'like', "%{$search}%")
@@ -30,10 +34,15 @@ class BusinessAdminController extends Controller
         $statistics = [
             'businesses' => Business::count(),
             'active' => Business::where('active', true)->count(),
+            'inactive' => Business::where('active', false)->count(),
+            'owners' => User::whereIn('role', ['dueno', 'admin'])->count(),
             'users' => User::where('role', '!=', 'superadmin')->count(),
         ];
+        $selectedBusiness = $request->session()->get('managed_business_id')
+            ? Business::find($request->session()->get('managed_business_id'))
+            : null;
 
-        return view('superadmin.businesses.index', compact('businesses', 'search', 'statistics'));
+        return view('superadmin.businesses.index', compact('businesses', 'search', 'status', 'statistics', 'selectedBusiness'));
     }
 
     public function create()

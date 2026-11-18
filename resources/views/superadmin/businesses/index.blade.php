@@ -8,26 +8,41 @@
 @stop
 @section('content')
     @include('shared.alerts')
-    @if(session('managed_business_id'))
+    @if($selectedBusiness)
         <div class="alert alert-info d-flex justify-content-between align-items-center">
-            Está seleccionado un negocio para administración operativa.
+            Negocio seleccionado para administración: <strong>{{ $selectedBusiness->name }}</strong>.
             <a class="btn btn-sm btn-info" href="{{ route('products.index') }}">Abrir sus módulos</a>
         </div>
     @endif
     <div class="row">
-        <div class="col-md-4"><div class="small-box bg-info"><div class="inner"><h3>{{ $statistics['businesses'] }}</h3><p>Negocios registrados</p></div></div></div>
-        <div class="col-md-4"><div class="small-box bg-success"><div class="inner"><h3>{{ $statistics['active'] }}</h3><p>Negocios activos</p></div></div></div>
-        <div class="col-md-4"><div class="small-box bg-primary"><div class="inner"><h3>{{ $statistics['users'] }}</h3><p>Usuarios asociados</p></div></div></div>
+        <div class="col-6 col-xl-3"><div class="small-box"><div class="inner"><h3>{{ $statistics['businesses'] }}</h3><p>Negocios registrados</p></div></div></div>
+        <div class="col-6 col-xl-3"><div class="small-box"><div class="inner"><h3>{{ $statistics['active'] }}</h3><p>Negocios activos</p></div></div></div>
+        <div class="col-6 col-xl-3"><div class="small-box"><div class="inner"><h3>{{ $statistics['inactive'] }}</h3><p>Negocios inactivos</p></div></div></div>
+        <div class="col-6 col-xl-3"><div class="small-box"><div class="inner"><h3>{{ $statistics['owners'] }}</h3><p>Dueños registrados</p></div></div></div>
+        <div class="col-6 col-xl-3"><div class="small-box"><div class="inner"><h3>{{ $statistics['users'] }}</h3><p>Usuarios registrados</p></div></div></div>
     </div>
     <div class="card">
         <div class="card-header">
-            <form method="GET" action="{{ route('superadmin.businesses.index') }}" class="form-inline">
-                <input name="search" value="{{ $search }}" class="form-control mr-2" placeholder="Buscar por negocio, dueño o correo" aria-label="Buscar negocios">
-                <button class="btn btn-secondary">Buscar</button>
+            <form method="GET" action="{{ route('superadmin.businesses.index') }}" class="row align-items-end">
+                <div class="form-group col-12 col-md-6 mb-md-0">
+                    <label class="sr-only" for="business-search">Buscar negocios</label>
+                    <input id="business-search" name="search" value="{{ $search }}" class="form-control" placeholder="Buscar por negocio, dueño o correo" aria-label="Buscar negocios">
+                </div>
+                <div class="form-group col-8 col-md-3 mb-md-0">
+                    <label class="sr-only" for="business-status">Estado</label>
+                    <select id="business-status" name="status" class="form-control" aria-label="Filtrar por estado">
+                        <option value="">Todos los estados</option>
+                        <option value="active" @selected($status === 'active')>Activos</option>
+                        <option value="inactive" @selected($status === 'inactive')>Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-4 col-md-3">
+                    <button class="btn btn-primary btn-block" type="submit">Buscar</button>
+                </div>
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover mb-0">
+            <table class="table-mobile-cards table table-hover mb-0">
                 <thead><tr><th>Negocio</th><th>Dueño</th><th>Contacto</th><th>Usuarios</th><th>Estado</th><th>Administración</th></tr></thead>
                 <tbody>
                     @forelse($businesses as $business)

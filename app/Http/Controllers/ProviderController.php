@@ -29,9 +29,10 @@ class ProviderController extends Controller
 
     public function create()
     {
-        $products = Product::where('active', true)->orderBy('name')->get();
+        $selectedProductIds = collect(old('products', []))->filter()->unique();
+        $products = Product::whereIn('id', $selectedProductIds)->orderBy('name')->get();
 
-        return view('providers.create', compact('products'));
+        return view('providers.create', compact('products'))->with('provider', null);
     }
 
     public function store(Request $request)
@@ -64,7 +65,12 @@ class ProviderController extends Controller
     public function edit(Provider $provider)
     {
         $provider->load('products');
-        $products = Product::where('active', true)->orderBy('name')->get();
+        $selectedProductIds = collect(old('products', $provider->products->pluck('id')->all()))->filter()->unique();
+        $products = Product::where(fn ($query) => $query
+            ->where('active', true)
+            ->orWhereIn('id', $selectedProductIds))
+            ->orderBy('name')
+            ->get();
 
         return view('providers.edit', compact('provider', 'products'));
     }

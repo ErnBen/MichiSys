@@ -10,7 +10,7 @@
     @include('shared.alerts')
     <div class="card">
         <div class="card-body table-responsive">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead><tr><th>Fecha</th><th>Producto</th><th>Cantidad</th><th>Lote</th><th>Costo total</th><th>Responsable</th><th></th></tr></thead>
                 <tbody>
                     @forelse($productions as $production)

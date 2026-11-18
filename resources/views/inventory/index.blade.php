@@ -17,12 +17,49 @@
             </ul>
         </div>
     @endif
+    <form method="GET" action="{{ route('inventory.index') }}" class="card card-body mb-3">
+        <div class="row">
+            <div class="form-group col-12 col-md-3">
+                <label for="inventory-search">Nombre o código</label>
+                <input id="inventory-search" type="search" name="search" value="{{ $search }}" class="form-control" placeholder="Producto o SKU">
+            </div>
+            <div class="form-group col-6 col-md-3">
+                <label for="inventory-category">Categoría</label>
+                <select id="inventory-category" name="category_id" class="form-control">
+                    <option value="">Todas</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? '') == $category->id)>{{ $category->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group col-6 col-md-2">
+                <label for="inventory-stock">Disponibilidad</label>
+                <select id="inventory-stock" name="stock" class="form-control">
+                    <option value="">Cualquier stock</option>
+                    <option value="low" @selected(($filters['stock'] ?? '') === 'low')>Stock bajo</option>
+                    <option value="available" @selected(($filters['stock'] ?? '') === 'available')>Disponible</option>
+                    <option value="out" @selected(($filters['stock'] ?? '') === 'out')>Sin stock</option>
+                </select>
+            </div>
+            <div class="form-group col-6 col-md-2">
+                <label for="inventory-expiry">Vencimiento</label>
+                <select id="inventory-expiry" name="expires" class="form-control">
+                    <option value="">Cualquiera</option>
+                    <option value="soon" @selected(($filters['expires'] ?? '') === 'soon')>Próximo a vencer</option>
+                    <option value="expired" @selected(($filters['expires'] ?? '') === 'expired')>Vencido</option>
+                </select>
+            </div>
+            <div class="form-group col-12 col-md-2 align-self-end">
+                <button class="btn btn-primary btn-block" type="submit">Filtrar</button>
+            </div>
+        </div>
+    </form>
     <div class="row">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Stock actual</h3></div>
                 <div class="card-body p-0 table-responsive">
-                    <table class="table table-hover">
+                    <table class="table-mobile-cards table table-hover">
                         <thead>
                             <tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr>
                         </thead>
@@ -44,7 +81,7 @@
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Historial de movimientos</h3></div>
                 <div class="card-body p-0 table-responsive">
-                    <table class="table table-hover">
+                    <table class="table-mobile-cards table table-hover">
                         <thead>
                             <tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th><th>Fecha</th></tr>
                         </thead>
@@ -61,7 +98,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer clearfix">{{ $movements->links() }}</div>
+                <div class="card-footer clearfix inventory-movements-pagination">{{ $movements->links() }}</div>
             </div>
         </div>
     </div>
@@ -69,7 +106,7 @@
     <div class="card mt-3">
         <div class="card-header"><h3 class="card-title">Lotes y vencimientos</h3></div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr><th>Producto</th><th>Lote</th><th>Vencimiento</th><th>Disponible</th><th>Origen</th></tr>
                 </thead>
@@ -116,12 +153,13 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Producto</label>
-                            <select name="product_id" class="form-control" required>
-                                <option value="">Seleccionar producto</option>
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}">{{ $product->name }} (Stock actual: {{ $product->stock }} {{ $product->unit_label }})</option>
-                                @endforeach
-                            </select>
+                            <div class="product-selector" data-product-selector data-mode="single" data-search-url="{{ route('products.search') }}">
+                                <input type="search" class="form-control mb-2" data-product-query placeholder="Buscar por nombre o código" autocomplete="off">
+                                <div class="small text-muted mb-2" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres. Se muestran hasta 20 resultados.</div>
+                                <div class="list-group mb-2" data-product-results></div>
+                                <input type="hidden" name="product_id" data-product-selected-id>
+                                <div class="font-weight-bold" data-product-selected></div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Cantidad (unidad base)</label>
@@ -156,4 +194,5 @@
             </div>
         </div>
     </div>
+    @include('shared.product-selector-script')
 @stop

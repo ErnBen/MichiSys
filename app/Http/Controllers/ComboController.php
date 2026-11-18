@@ -30,7 +30,8 @@ class ComboController extends Controller
 
     public function create()
     {
-        $products = Product::where('active', true)->where('kind', 'product')->orderBy('name')->get();
+        $selectedProductIds = collect(old('products', []))->filter()->unique();
+        $products = Product::whereIn('id', $selectedProductIds)->orderBy('name')->get();
 
         return view('combos.create', compact('products'))->with('combo', null);
     }
@@ -44,7 +45,7 @@ class ComboController extends Controller
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
             'products' => 'required|array|min:1',
-            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)->where('kind', 'product')],
+            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)],
             'quantities' => 'nullable|array',
             'quantities.*' => 'integer|min:1',
         ]);
@@ -80,7 +81,11 @@ class ComboController extends Controller
 
     public function edit(Combo $combo)
     {
-        $products = Product::where('active', true)->where('kind', 'product')->orderBy('name')->get();
+        $selectedProductIds = collect(old('products', $combo->products->pluck('id')->all()))->filter()->unique();
+        $products = Product::query()
+            ->where(fn ($query) => $query->where('active', true)->orWhereIn('id', $selectedProductIds))
+            ->orderBy('name')
+            ->get();
 
         return view('combos.edit', compact('combo', 'products'));
     }
@@ -94,7 +99,7 @@ class ComboController extends Controller
             'image' => 'nullable|image|max:2048',
             'active' => 'sometimes|boolean',
             'products' => 'required|array|min:1',
-            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)->where('kind', 'product')],
+            'products.*' => ['distinct', Rule::exists('products', 'id')->where('business_id', $request->user()->business_id)],
             'quantities' => 'nullable|array',
             'quantities.*' => 'integer|min:1',
         ]);

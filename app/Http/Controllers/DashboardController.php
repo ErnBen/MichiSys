@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Client;
 use App\Models\InventoryLot;
+use App\Models\Purchase;
+use App\Models\Receivable;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -27,6 +29,9 @@ class DashboardController extends Controller
         $totalCombos = Combo::count();
         $totalSales = Sale::whereNull('cancelled_at')->count();
         $totalClients = Client::count();
+        $todaySales = Sale::whereNull('cancelled_at')->whereDate('created_at', today())->sum('total');
+        $pendingBalance = Receivable::where('status', '!=', 'cancelled')->where('balance', '>', 0)->sum('balance');
+        $recentPurchases = Purchase::orderByDesc('purchase_date')->orderByDesc('id')->limit(5)->get();
         $warningDays = config('michisys.expiration_warning_days', 30);
         $criticalDays = config('michisys.expiration_critical_days', 7);
 
@@ -106,6 +111,9 @@ class DashboardController extends Controller
             'totalCombos',
             'totalSales',
             'totalClients',
+            'todaySales',
+            'pendingBalance',
+            'recentPurchases',
             'lowStockProducts',
             'lowStockList',
             'expiringSoonProducts',

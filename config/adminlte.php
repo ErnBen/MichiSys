@@ -10,8 +10,18 @@ return [
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
+    'logo' => 'MichiSys',
+    'logo_img' => 'images/michisys-store.svg',
+    'logo_img_class' => 'brand-image elevation-3',
+    'logo_img_alt' => 'MichiSys',
 
     'menu' => [
+        [
+            'text' => 'Punto de venta',
+            'route' => 'sales.create',
+            'icon' => 'fas fa-fw fa-cash-register',
+            'can' => 'use-sales',
+        ],
         [
             'text' => 'Administración de plataforma',
             'route' => 'superadmin.businesses.index',
@@ -30,7 +40,7 @@ return [
         ],
 
         [
-            'text' => 'Productos',
+            'text' => 'Inventario',
             'route' => 'products.index',
             'icon' => 'fas fa-fw fa-box-open',
             'can' => 'manage-business',
@@ -48,7 +58,7 @@ return [
             'can' => 'manage-business',
         ],
         [
-            'text' => 'Ventas',
+            'text' => 'Historial de ventas',
             'route' => 'sales.index',
             'icon' => 'fas fa-fw fa-cash-register',
             'can' => 'use-sales',
@@ -57,7 +67,7 @@ return [
             'text' => 'Cuentas por cobrar',
             'route' => 'receivables.index',
             'icon' => 'fas fa-fw fa-file-invoice-dollar',
-            'can' => 'manage-business',
+            'can' => 'use-receivables',
         ],
         [
             'text' => 'Consultar precios',
@@ -66,7 +76,7 @@ return [
             'can' => 'use-sales',
         ],
         [
-            'text' => 'Inventario',
+            'text' => 'Movimientos y lotes',
             'route' => 'inventory.index',
             'icon' => 'fas fa-fw fa-warehouse',
             'can' => 'manage-business',

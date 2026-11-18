@@ -20,7 +20,7 @@
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr><th>Nombre</th><th>Email de acceso</th><th>Estado</th><th>Registrado</th><th>Acciones</th></tr>
                 </thead>

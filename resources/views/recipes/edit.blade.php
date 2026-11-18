@@ -10,8 +10,10 @@
             @csrf
             @method('PUT')
             @include('recipes.form')
-            <button type="submit" class="btn btn-primary mt-3">Actualizar receta</button>
-            <a href="{{ route('recipes.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Actualizar receta</button>
+                <a href="{{ route('recipes.index') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
         </form>
     </div></div>
 @stop

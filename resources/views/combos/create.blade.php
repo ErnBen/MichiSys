@@ -1,7 +1,8 @@
 @extends('adminlte::page')
 @section('title', 'Crear Combo')
 @section('content_header')
-    <h1>Crear Combo</h1>
+    <h1>Crear combo</h1>
+    <p class="page-subtitle mb-0">Define el precio y selecciona los productos que incluirá.</p>
 @stop
 @section('content')
     @include('shared.alerts')
@@ -10,8 +11,10 @@
             <form action="{{ route('combos.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @include('combos.form')
-                <button type="submit" class="btn btn-primary mt-3">Guardar</button>
-                <a href="{{ route('combos.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+                <div class="form-actions combo-form-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2" aria-hidden="true"></i>Guardar combo</button>
+                    <a href="{{ route('combos.index') }}" class="btn btn-light"><i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>Cancelar</a>
+                </div>
             </form>
         </div>
     </div>

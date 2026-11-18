@@ -66,7 +66,7 @@
     <div class="card">
         <div class="card-header"><h3 class="card-title">Productos</h3></div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr>
                 </thead>
@@ -86,14 +86,23 @@
     <div class="card">
         <div class="card-header"><h3 class="card-title">Combos</h3></div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr><th>Combo</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr>
                 </thead>
                 <tbody>
                     @foreach($sale->combos as $item)
                         <tr>
-                            <td>{{ $item->combo?->name ?? 'Combo eliminado' }}</td>
+                            <td>
+                                {{ $item->components_snapshot['combo_name'] ?? $item->combo?->name ?? 'Combo eliminado' }}
+                                @if($item->components_snapshot)
+                                    <small class="d-block text-muted">Incluye:
+                                        @foreach($item->components_snapshot['components'] ?? $item->components_snapshot as $component)
+                                            {{ (int) $component['quantity'] * $item->quantity }} {{ $component['unit_label'] }} {{ $component['name'] }}{{ $loop->last ? '' : ' ·' }}
+                                        @endforeach
+                                    </small>
+                                @endif
+                            </td>
                             <td>{{ $item->quantity }}</td>
                             <td>{{ number_format($item->price, 2) }}</td>
                             <td>{{ number_format($item->subtotal, 2) }}</td>

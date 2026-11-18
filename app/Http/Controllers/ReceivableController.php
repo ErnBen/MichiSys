@@ -33,6 +33,7 @@ class ReceivableController extends Controller
             ->when($search !== '', fn ($query) => $query->where(fn ($query) =>
                 $query->whereHas('client', fn ($query) =>
                     $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('document', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
                 )->orWhere('sale_id', is_numeric($search) ? (int) $search : -1)
             ))

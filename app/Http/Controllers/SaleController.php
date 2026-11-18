@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Category;
 use App\Models\Combo;
+use App\Models\InventoryLot;
 use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\Receivable;
+use App\Models\ReceivablePayment;
 use App\Models\Sale;
 use App\Models\SaleCombo;
 use App\Models\SaleProduct;
@@ -41,7 +44,9 @@ class SaleController extends Controller
 
     public function create(Request $request)
     {
-        $products = Product::where('active', true)
+        $selectedProductIds = collect(old('product_ids', []))->filter()->unique()->values();
+        $products = Product::whereIn('id', $selectedProductIds)
+            ->where('active', true)
             ->where('kind', 'product')
             ->withSum(['lots as sellable_stock' => function (Builder $query): void {
                 $query->where('available_quantity', '>', 0)
@@ -50,14 +55,93 @@ class SaleController extends Controller
                             ->orWhereDate('expires_at', '>=', now()->toDateString());
                     });
             }], 'available_quantity')
+            ->get();
+        $combos = Combo::where('active', true)
+            ->with(['products' => fn ($query) => $query->withSum(['lots as sellable_stock' => fn (Builder $query) => $query
+                ->where('available_quantity', '>', 0)
+                ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhereDate('expires_at', '>=', today()))], 'available_quantity')])
             ->orderBy('name')
             ->get();
-        $combos = Combo::where('active', true)->orderBy('name')->get();
-        $clients = Client::orderBy('name')->get();
+        $selectedClient = old('client_id')
+            ? Client::whereKey(old('client_id'))->first()
+            : null;
+        $categories = Category::where('active', true)->orderBy('name')->get(['id', 'name']);
 
         $idempotencyKey = old('idempotency_key', (string) Str::uuid());
 
-        return view('sales.create', compact('products', 'combos', 'clients', 'idempotencyKey'));
+        return view('sales.create', compact('products', 'combos', 'selectedClient', 'categories', 'idempotencyKey'));
+    }
+
+    public function productSearch(Request $request)
+    {
+        $filters = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('business_id', $request->user()->business_id)],
+        ]);
+        $search = trim($filters['search'] ?? '');
+
+        if ($search === '' && empty($filters['category_id'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $products = Product::query()
+            ->where('active', true)
+            ->where('kind', 'product')
+            ->when(isset($filters['category_id']), fn ($query) => $query->where('category_id', $filters['category_id']))
+            ->when($search !== '', fn ($query) => $query->where(fn ($query) =>
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+            ))
+            ->whereHas('lots', fn (Builder $query) => $query
+                ->where('available_quantity', '>', 0)
+                ->where(fn (Builder $query) => $query
+                    ->whereNull('expires_at')
+                    ->orWhereDate('expires_at', '>=', today())
+                ))
+            ->withSum(['lots as sellable_stock' => fn (Builder $query) => $query
+                ->where('available_quantity', '>', 0)
+                ->where(fn (Builder $query) => $query
+                    ->whereNull('expires_at')
+                    ->orWhereDate('expires_at', '>=', today())
+                )], 'available_quantity')
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->limit(24)
+            ->get(['id', 'category_id', 'name', 'sku', 'price', 'unit'])
+            ->map(fn (Product $product): array => [
+                'id' => $product->id,
+                'category' => $product->category?->name,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => $product->price,
+                'unit_label' => $product->unit_label,
+                'image_url' => $product->image ? asset('storage/'.$product->image) : null,
+                'sellable_stock' => min((int) $product->stock, (int) $product->sellable_stock),
+            ]);
+
+        return response()->json(['data' => $products]);
+    }
+
+    public function clientSearch(Request $request)
+    {
+        $filters = $request->validate(['search' => 'required|string|min:2|max:100']);
+        $search = trim($filters['search']);
+        $clients = Client::query()
+            ->where(fn ($query) => $query
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('document', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%"))
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'document', 'phone'])
+            ->map(fn (Client $client): array => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'document' => $client->document,
+                'phone' => $client->phone,
+            ]);
+
+        return response()->json(['data' => $clients]);
     }
 
     public function store(Request $request, InventoryService $inventory)
@@ -115,6 +199,8 @@ class SaleController extends Controller
             $combos = Combo::with('products')
                 ->where('active', true)
                 ->whereIn('id', $comboIds)
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
@@ -141,27 +227,99 @@ class SaleController extends Controller
             foreach ($comboIds as $comboId) {
                 $combo = $combos->get($comboId);
                 $quantity = (int) ($data['combo_quantities'][$comboId] ?? 1);
+                $componentsSnapshot = [];
+
+                if ($combo->products->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'stock' => "El combo {$combo->name} no tiene productos o ingredientes configurados.",
+                    ]);
+                }
 
                 foreach ($combo->products as $comboProduct) {
-                    if ($comboProduct->business_id !== $businessId || $comboProduct->kind !== 'product') {
+                    if ($comboProduct->business_id !== $businessId || ! in_array($comboProduct->kind, ['product', 'ingredient'], true)) {
                         throw ValidationException::withMessages([
-                            'products' => 'El combo contiene un producto de otro negocio.',
+                            'products' => "El combo {$combo->name} contiene un componente que no pertenece a este negocio.",
                         ]);
                     }
 
-                    $required = $comboProduct->pivot->quantity * $quantity;
+                    $componentQuantity = (int) $comboProduct->pivot->quantity;
+                    $required = $componentQuantity * $quantity;
                     $stockAdjustments[$comboProduct->id] = ($stockAdjustments[$comboProduct->id] ?? 0) + $required;
+                    $componentsSnapshot[] = [
+                        'product_id' => $comboProduct->id,
+                        'name' => $comboProduct->name,
+                        'quantity' => $componentQuantity,
+                        'unit_label' => $comboProduct->unit_label,
+                    ];
                 }
 
                 $lineSubtotal = $combo->price * $quantity;
                 $subtotal += $lineSubtotal;
-                $comboItems[] = compact('combo', 'quantity', 'lineSubtotal');
+                $comboItems[] = compact('combo', 'quantity', 'lineSubtotal', 'componentsSnapshot');
             }
 
             if (empty($productItems) && empty($comboItems)) {
                 throw ValidationException::withMessages([
                     'products' => 'Debe agregar al menos un producto o combo a la venta.',
                 ]);
+            }
+
+            $stockProducts = Product::query()
+                ->where('business_id', $businessId)
+                ->whereIn('id', array_keys($stockAdjustments))
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+            $availableLots = InventoryLot::query()
+                ->where('business_id', $businessId)
+                ->whereIn('product_id', array_keys($stockAdjustments))
+                ->where('available_quantity', '>', 0)
+                ->where(fn (Builder $query) => $query
+                    ->whereNull('expires_at')
+                    ->orWhereDate('expires_at', '>=', today()))
+                ->orderBy('product_id')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->groupBy('product_id');
+            $stockShortages = [];
+
+            foreach ($stockAdjustments as $productId => $required) {
+                $product = $stockProducts->get($productId);
+
+                if (! $product) {
+                    throw ValidationException::withMessages([
+                        'products' => 'Uno de los productos o ingredientes ya no está disponible en este negocio.',
+                    ]);
+                }
+
+                $lotStock = (int) ($availableLots->get($product->id)?->sum('available_quantity') ?? 0);
+                $available = $product->active
+                    ? min((int) $product->stock, $lotStock)
+                    : 0;
+
+                if ($required > $available) {
+                    $unit = mb_strtolower($product->unit_label);
+                    $formatQuantity = static fn (int $quantity): string => $quantity.' '.($unit === 'unidades'
+                        ? ($quantity === 1 ? 'unidad' : 'unidades')
+                        : $unit);
+                    $missing = $required - $available;
+                    $missingVerb = $missing === 1 ? 'falta' : 'faltan';
+                    $stockShortages[] = "{$product->name}: se necesitan {$formatQuantity($required)}, hay {$formatQuantity($available)} y {$missingVerb} {$formatQuantity($missing)}.";
+                }
+            }
+
+            if ($stockShortages !== []) {
+                if ($productItems === [] && $comboItems !== []) {
+                    $comboQuantity = array_sum(array_column($comboItems, 'quantity'));
+                    $comboLabel = $comboQuantity === 1 ? 'combo' : 'combos';
+                    array_unshift($stockShortages, "Stock insuficiente para vender {$comboQuantity} {$comboLabel}.");
+                } else {
+                    array_unshift($stockShortages, 'Stock insuficiente para completar la venta.');
+                }
+
+                throw ValidationException::withMessages(['stock' => $stockShortages]);
             }
 
             $discount = (float) ($data['discount'] ?? 0);
@@ -264,6 +422,10 @@ class SaleController extends Controller
                     'quantity' => $item['quantity'],
                     'price' => $combo->price,
                     'subtotal' => $item['lineSubtotal'],
+                    'components_snapshot' => [
+                        'combo_name' => $combo->name,
+                        'components' => $item['componentsSnapshot'],
+                    ],
                 ]);
 
             }
@@ -332,12 +494,6 @@ class SaleController extends Controller
             }
 
             $receivable = $sale->receivable()->lockForUpdate()->first();
-            if ($receivable && (float) $receivable->paid_amount > 0) {
-                throw ValidationException::withMessages([
-                    'sale' => 'No se puede anular una venta cuya cuenta por cobrar ya tiene pagos registrados.',
-                ]);
-            }
-
             $cancelledAt = now();
             $claimed = Sale::whereKey($sale->id)
                 ->where('business_id', $sale->business_id)
@@ -381,6 +537,24 @@ class SaleController extends Controller
                 }
 
                 foreach ($sale->combos as $item) {
+                    $snapshotComponents = $item->components_snapshot['components'] ?? null;
+
+                    if (is_array($snapshotComponents)) {
+                        foreach ($snapshotComponents as $component) {
+                            $product = Product::query()
+                                ->where('business_id', $sale->business_id)
+                                ->findOrFail($component['product_id']);
+                            $inventory->receive(
+                                $product,
+                                (int) $component['quantity'] * $item->quantity,
+                                "Anulación de venta #{$sale->id}",
+                                auth()->id()
+                            );
+                        }
+
+                        continue;
+                    }
+
                     foreach ($item->combo?->products ?? [] as $comboProduct) {
                         $inventory->receive(
                             $comboProduct,
@@ -393,7 +567,21 @@ class SaleController extends Controller
             }
 
             if ($receivable) {
-                $receivable->update(['status' => 'cancelled', 'balance' => 0]);
+                ReceivablePayment::where('receivable_id', $receivable->id)
+                    ->where('business_id', $sale->business_id)
+                    ->whereNull('reversed_at')
+                    ->update([
+                        'reversed_at' => $cancelledAt,
+                        'reversed_by' => auth()->id(),
+                        'reversal_reason' => "Anulación de venta #{$sale->id}: {$data['cancellation_reason']}",
+                        'updated_at' => $cancelledAt,
+                    ]);
+
+                $receivable->update([
+                    'status' => 'cancelled',
+                    'paid_amount' => 0,
+                    'balance' => 0,
+                ]);
             }
         }, 3);
 

@@ -24,8 +24,9 @@ class SalePaymentsAndReceivablesTest extends TestCase
 
         $this->actingAs($user)->get(route('sales.create'))
             ->assertOk()
-            ->assertSee('Agregar al carrito')
-            ->assertSee('data-step="1"', false)
+            ->assertSee('Buscar productos')
+            ->assertSee('sales/products/search')
+            ->assertSee('sales/clients/search')
             ->assertSee('Método de pago')
             ->assertSee('Dinero recibido (Gs.)')
             ->assertSee('Confirmar venta');
@@ -280,7 +281,7 @@ class SalePaymentsAndReceivablesTest extends TestCase
             'reversal_reason' => 'Cajero no autorizado',
         ])->assertForbidden();
 
-        $this->get(route('receivables.show', $receivable))->assertForbidden();
+        $this->get(route('receivables.show', $receivable))->assertOk();
         $admin = User::factory()->create(['role' => 'admin', 'business_id' => $owner->business_id]);
         $this->actingAs($admin)->delete(route('receivables.payments.reverse', [$receivable, $payment]), [
             'reversal_reason' => 'Corrección de registro',
@@ -311,6 +312,77 @@ class SalePaymentsAndReceivablesTest extends TestCase
         $this->actingAs($otherUser)
             ->get(route('receivables.show', $receivable->id))
             ->assertNotFound();
+    }
+
+    public function test_cashier_can_consult_receivables_and_record_a_partial_payment(): void
+    {
+        [$cashier, $product] = $this->makeSellable('cajero');
+        $client = Client::create(['name' => 'Cliente del cajero', 'document' => '1234567']);
+
+        $this->actingAs($cashier)->post(route('sales.store'), [
+            'product_ids' => [$product->id],
+            'product_quantities' => [$product->id => 1],
+            'client_id' => $client->id,
+            'payment_method' => 'credit',
+        ])->assertRedirect(route('sales.index'));
+
+        $receivable = Receivable::firstOrFail();
+        $this->get(route('receivables.index', ['search' => '1234567']))
+            ->assertOk()
+            ->assertSeeText('Cliente del cajero');
+        $this->get(route('receivables.show', $receivable))->assertOk();
+        $this->post(route('receivables.payments.store', $receivable), [
+            'amount' => 1000,
+            'payment_method' => 'cash',
+            'paid_at' => now()->format('Y-m-d\TH:i'),
+        ])->assertRedirect(route('receivables.show', $receivable));
+
+        $this->assertSame('1000.00', $receivable->fresh()->paid_amount);
+        $this->assertSame('3000.00', $receivable->fresh()->balance);
+        $this->assertDatabaseHas('receivable_payments', [
+            'receivable_id' => $receivable->id,
+            'user_id' => $cashier->id,
+            'amount' => 1000,
+        ]);
+    }
+
+    public function test_cancelling_a_credit_sale_reverses_linked_payments_and_clears_the_receivable_balance(): void
+    {
+        [$cashier, $product] = $this->makeSellable('cajero');
+        $client = Client::create(['name' => 'Cliente de anulación']);
+
+        $this->actingAs($cashier)->post(route('sales.store'), [
+            'product_ids' => [$product->id],
+            'product_quantities' => [$product->id => 1],
+            'client_id' => $client->id,
+            'payment_method' => 'credit',
+        ]);
+        $sale = Sale::firstOrFail();
+        $receivable = Receivable::firstOrFail();
+
+        $this->post(route('receivables.payments.store', $receivable), [
+            'amount' => 1200,
+            'payment_method' => 'cash',
+            'paid_at' => now()->format('Y-m-d\TH:i'),
+        ])->assertRedirect();
+        $payment = ReceivablePayment::firstOrFail();
+
+        $this->delete(route('sales.destroy', $sale), [
+            'cancellation_reason' => 'Venta anulada por error de registro',
+        ])->assertRedirect(route('sales.index'));
+
+        $sale->refresh();
+        $receivable->refresh();
+        $payment->refresh();
+        $this->assertNotNull($sale->cancelled_at);
+        $this->assertSame('cancelled', $receivable->status);
+        $this->assertSame('0.00', $receivable->paid_amount);
+        $this->assertSame('0.00', $receivable->balance);
+        $this->assertNotNull($payment->reversed_at);
+        $this->assertSame($cashier->id, $payment->reversed_by);
+        $this->assertStringContainsString('Venta anulada por error de registro', $payment->reversal_reason);
+        $this->assertSame(10, $product->fresh()->stock);
+        $this->assertDatabaseCount('receivable_payments', 1);
     }
 
     private function makeSellable(string $role = 'admin'): array

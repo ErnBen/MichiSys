@@ -17,8 +17,8 @@
         <div class="card-body">
             <form method="GET" action="{{ route('receivables.index') }}" class="row">
                 <div class="form-group col-12 col-md-4">
-                    <label for="search">Cliente o número de venta</label>
-                    <input id="search" name="search" class="form-control" value="{{ $search }}" placeholder="Nombre, teléfono o venta">
+                    <label for="search">Cliente, documento o número de venta</label>
+                    <input id="search" name="search" class="form-control" value="{{ $search }}" placeholder="Nombre, documento, teléfono o venta">
                 </div>
                 <div class="form-group col-6 col-md-2">
                     <label for="status">Estado</label>
@@ -52,7 +52,7 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table-mobile-cards table table-hover">
                     <thead>
                         <tr>
                             <th>Venta</th><th>Cliente</th><th>Fecha</th><th>Vencimiento</th>

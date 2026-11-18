@@ -10,7 +10,7 @@
     @include('shared.alerts')
     <div class="card">
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover mb-0">
+            <table class="table-mobile-cards table table-hover mb-0">
                 <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead>
                 <tbody>
                     @forelse($users as $user)

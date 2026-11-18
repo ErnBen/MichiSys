@@ -61,7 +61,8 @@ class PurchaseWorkflowTest extends TestCase
         $this->get(route('purchases.show', $purchase))
             ->assertOk()
             ->assertSee('Croquetas')
-            ->assertSee('FAC-100');
+            ->assertSee('FAC-100')
+            ->assertSee('Cantidad recibida');
         $this->assertSame(5, $product->fresh()->stock);
         $this->assertSame('500.00', $product->fresh()->cost);
         $this->assertSame('251.00', $purchase->total);

@@ -16,15 +16,19 @@
 </div>
 <div class="form-group">
     <label>Productos que proporciona</label>
-    <div class="border rounded px-2 py-2" style="max-height: 300px; overflow-y: auto;">
+    <div class="product-selector" data-product-selector data-mode="provider" data-search-url="{{ route('products.search') }}">
+        <input type="search" class="form-control mb-2" data-product-query placeholder="Buscar por nombre o código" autocomplete="off">
+        <div class="small text-muted mb-2" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres. Se muestran hasta 20 resultados.</div>
+        <div class="list-group mb-2" data-product-results></div>
+        <div class="border rounded px-2 py-2" data-product-selected>
         @foreach($products ?? [] as $product)
-            <div class="form-check">
+            <div class="form-check product-selection-row" data-selected-product="{{ $product->id }}">
                 <input type="checkbox" name="products[]" value="{{ $product->id }}" class="form-check-input" id="provider_product_{{ $product->id }}" @checked(in_array($product->id, old('products', $provider?->products->pluck('id')->toArray() ?? [])))>
                 <label class="form-check-label" for="provider_product_{{ $product->id }}">{{ $product->name }} @if($product->category) <small class="text-muted">({{ $product->category->name }})</small>@endif</label>
             </div>
         @endforeach
-        @if(($products ?? collect())->isEmpty())
-            <p class="text-muted mb-0">No hay productos disponibles para asociar.</p>
-        @endif
+            <p class="text-muted mb-0" data-product-empty @if(($products ?? collect())->isNotEmpty()) hidden @endif>No hay productos asociados todavía.</p>
+        </div>
     </div>
 </div>
+@include('shared.product-selector-script')

@@ -49,7 +49,9 @@
                 </div>
             </div>
         @endunless
-        <button class="btn btn-primary">Guardar</button>
-        <a href="{{ route('superadmin.businesses.index') }}" class="btn btn-secondary">Cancelar</a>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{{ route('superadmin.businesses.index') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
     </form>
 @stop

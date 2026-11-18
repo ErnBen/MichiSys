@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Provider;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -17,18 +18,90 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $filters = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('business_id', $request->user()->business_id)],
+            'provider_id' => ['nullable', Rule::exists('providers', 'id')->where('business_id', $request->user()->business_id)],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'stock' => ['nullable', Rule::in(['low', 'available', 'out'])],
+            'expires' => ['nullable', Rule::in(['soon', 'expired'])],
+        ]);
+        $search = trim($filters['search'] ?? '');
 
         $products = Product::with('category')
-            ->when($search, fn ($query) =>
+            ->when($search !== '', fn ($query) => $query->where(fn ($query) =>
                 $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
-            )
+            ))
+            ->when(isset($filters['category_id']), fn ($query) => $query->where('category_id', $filters['category_id']))
+            ->when(isset($filters['provider_id']), fn ($query) => $query->whereHas('providers', fn ($query) =>
+                $query->where('providers.id', $filters['provider_id'])
+            ))
+            ->when(isset($filters['status']), fn ($query) => $query->where('active', $filters['status'] === 'active'))
+            ->when(($filters['stock'] ?? null) === 'low', fn ($query) => $query->whereColumn('stock', '<=', 'stock_minimo'))
+            ->when(($filters['stock'] ?? null) === 'available', fn ($query) => $query->where('stock', '>', 0))
+            ->when(($filters['stock'] ?? null) === 'out', fn ($query) => $query->where('stock', '<=', 0))
+            ->when(($filters['expires'] ?? null) === 'soon', fn ($query) => $query->whereHas('lots', fn ($query) =>
+                $query->where('available_quantity', '>', 0)
+                    ->whereNotNull('expires_at')
+                    ->whereBetween('expires_at', [today(), today()->addDays(config('michisys.expiration_warning_days', 30))])
+            ))
+            ->when(($filters['expires'] ?? null) === 'expired', fn ($query) => $query->whereHas('lots', fn ($query) =>
+                $query->where('available_quantity', '>', 0)
+                    ->whereNotNull('expires_at')
+                    ->whereDate('expires_at', '<', today())
+            ))
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+        $providers = Provider::orderBy('name')->get(['id', 'name']);
 
-        return view('products.index', compact('products', 'search'));
+        return view('products.index', compact('products', 'search', 'filters', 'categories', 'providers'));
+    }
+
+    public function search(Request $request)
+    {
+        $filters = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('business_id', $request->user()->business_id)],
+            'provider_id' => ['nullable', Rule::exists('providers', 'id')->where('business_id', $request->user()->business_id)],
+            'kind' => ['nullable', Rule::in(['product', 'ingredient'])],
+            'active' => 'nullable|boolean',
+            'without_recipe' => 'nullable|boolean',
+            'except_recipe_id' => ['nullable', Rule::exists('recipes', 'id')->where('business_id', $request->user()->business_id)],
+        ]);
+        $search = trim($filters['search']);
+        $products = Product::query()
+            ->where(fn ($query) => $query
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%"))
+            ->when(isset($filters['category_id']), fn ($query) => $query->where('category_id', $filters['category_id']))
+            ->when(isset($filters['provider_id']), fn ($query) => $query->whereHas('providers', fn ($query) =>
+                $query->where('providers.id', $filters['provider_id'])
+            ))
+            ->when(isset($filters['kind']), fn ($query) => $query->where('kind', $filters['kind']))
+            ->when(array_key_exists('active', $filters), fn ($query) => $query->where('active', $filters['active']))
+            ->when(($filters['without_recipe'] ?? false), fn ($query) => $query->whereDoesntHave('recipe', fn ($query) =>
+                $query->when(isset($filters['except_recipe_id']), fn ($query) => $query->where('id', '!=', $filters['except_recipe_id']))
+            ))
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'category_id', 'name', 'sku', 'stock', 'price', 'unit', 'kind'])
+            ->map(fn (Product $product): array => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'stock' => $product->stock,
+                'price' => $product->price,
+                'unit_label' => $product->unit_label,
+                'kind' => $product->kind,
+                'category' => $product->category?->name,
+            ]);
+
+        return response()->json(['data' => $products]);
     }
 
     public function priceLookup(Request $request)
@@ -56,7 +129,7 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('active', true)->orderBy('name')->get();
 
         return view('products.create', compact('categories'))->with('product', null);
     }
@@ -64,7 +137,12 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'category_id' => ['required', Rule::exists('categories', 'id')->where('business_id', $request->user()->business_id)],
+            'category_id' => [
+                'required',
+                Rule::exists('categories', 'id')
+                    ->where('business_id', $request->user()->business_id)
+                    ->where('active', true),
+            ],
             'kind' => 'required|in:product,ingredient',
             'unit' => 'required|in:piece,g,ml',
             'name' => 'required|string|max:255',
@@ -109,7 +187,11 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where(fn ($query) => $query
+            ->where('active', true)
+            ->orWhere('id', $product->category_id))
+            ->orderBy('name')
+            ->get();
 
         return view('products.edit', compact('product', 'categories'));
     }
@@ -117,7 +199,12 @@ class ProductController extends Controller
     public function update(Request $request, Product $product, InventoryService $inventory)
     {
         $data = $request->validate([
-            'category_id' => ['required', Rule::exists('categories', 'id')->where('business_id', $request->user()->business_id)],
+            'category_id' => [
+                'required',
+                Rule::exists('categories', 'id')
+                    ->where('business_id', $request->user()->business_id)
+                    ->where(fn ($query) => $query->where('active', true)->orWhere('id', $product->category_id)),
+            ],
             'kind' => 'required|in:product,ingredient',
             'unit' => 'required|in:piece,g,ml',
             'name' => 'required|string|max:255',

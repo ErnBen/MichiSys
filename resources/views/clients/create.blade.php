@@ -10,8 +10,10 @@
             <form action="{{ route('clients.store') }}" method="POST">
                 @csrf
                 @include('clients.form')
-                <button type="submit" class="btn btn-primary mt-3">Guardar</button>
-                <a href="{{ route('clients.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <a href="{{ route('clients.index') }}" class="btn btn-secondary">Cancelar</a>
+                </div>
             </form>
         </div>
     </div>

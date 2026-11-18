@@ -1,4 +1,4 @@
-﻿@extends('adminlte::page')
+@extends('adminlte::page')
 @section('title', 'Categorías')
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
@@ -20,7 +20,7 @@
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -35,14 +35,29 @@
                             <td>{{ $category->name }}</td>
                             <td>{{ Str::limit($category->description, 80) }}</td>
                             <td>{!! $category->active ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>' !!}</td>
-                            <td>
-                                <a href="{{ route('categories.edit', $category) }}" class="btn btn-sm btn-warning">Editar</a>
-                                <a href="{{ route('categories.show', $category) }}" class="btn btn-sm btn-info">Ver</a>
-                                <form action="{{ route('categories.destroy', $category) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar categoría?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger">Eliminar</button>
-                                </form>
+                            <td class="table-row-actions-cell">
+                                <div class="table-row-actions">
+                                    <a href="{{ route('categories.edit', $category) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <a href="{{ route('categories.show', $category) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye" aria-hidden="true"></i><span>Ver</span>
+                                    </a>
+                                    <form action="{{ route('categories.toggle', $category) }}" method="POST">
+                                        @csrf
+                                        @method('PUT')
+                                        <button class="btn btn-sm btn-outline-{{ $category->active ? 'warning' : 'success' }}" type="submit">
+                                            <i class="fas fa-{{ $category->active ? 'pause' : 'play' }}" aria-hidden="true"></i><span>{{ $category->active ? 'Desactivar' : 'Activar' }}</span>
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('categories.destroy', $category) }}" method="POST" onsubmit="return confirm('¿Eliminar categoría?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i><span>Eliminar</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

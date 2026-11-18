@@ -53,7 +53,7 @@
     <div class="card">
         <div class="card-header"><h3 class="card-title">Ventas del período</h3></div>
         <div class="card-body table-responsive">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead><tr><th>Venta</th><th>Fecha</th><th>Vendedor</th><th>Método de pago</th><th>Venta neta</th><th>Costo</th><th>Margen bruto</th></tr></thead>
                 <tbody>
                     @forelse($saleRows as $row)

@@ -20,10 +20,11 @@
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr>
                         <th>Nombre</th>
+                        <th>Documento</th>
                         <th>Email</th>
                         <th>Teléfono</th>
                         <th>Dirección</th>
@@ -34,21 +35,30 @@
                     @forelse($clients as $client)
                         <tr>
                             <td>{{ $client->name }}</td>
+                            <td>{{ $client->document ?: '—' }}</td>
                             <td>{{ $client->email }}</td>
                             <td>{{ $client->phone }}</td>
                             <td>{{ $client->address }}</td>
-                            <td>
-                                <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-warning">Editar</a>
-                                <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-info">Ver</a>
-                                <form action="{{ route('clients.destroy', $client) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar cliente?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger">Eliminar</button>
-                                </form>
+                            <td class="client-actions-cell">
+                                <div class="client-actions">
+                                    <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye" aria-hidden="true"></i><span>Ver</span>
+                                    </a>
+                                    <form action="{{ route('clients.destroy', $client) }}" method="POST" onsubmit="return confirm('¿Eliminar cliente?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i><span>Eliminar</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5">No hay clientes registrados.</td></tr>
+                        <tr><td colspan="6">No hay clientes registrados.</td></tr>
                     @endforelse
                 </tbody>
             </table>

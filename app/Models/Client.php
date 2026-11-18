@@ -12,7 +12,7 @@ class Client extends Model
     use HasFactory;
     use BelongsToBusiness;
 
-    protected $fillable = ['name', 'email', 'phone', 'address'];
+    protected $fillable = ['name', 'document', 'email', 'phone', 'address'];
 
     public function sales(): HasMany
     {

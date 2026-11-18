@@ -38,7 +38,7 @@ class CategoryController extends Controller
         ]);
 
         $data['slug'] = Str::slug($data['name']);
-        $data['active'] = $request->has('active');
+        $data['active'] = (bool) ($data['active'] ?? true);
 
         Category::create($data);
 
@@ -64,7 +64,7 @@ class CategoryController extends Controller
         ]);
 
         $data['slug'] = Str::slug($data['name']);
-        $data['active'] = $request->has('active');
+        $data['active'] = (bool) ($data['active'] ?? false);
 
         $category->update($data);
 
@@ -73,8 +73,25 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->products()->exists()) {
+            $category->update(['active' => false]);
+
+            return Redirect::route('categories.index')
+                ->with('warning', 'La categoría tiene productos asociados y fue desactivada para conservar sus relaciones.');
+        }
+
         $category->delete();
 
         return Redirect::route('categories.index')->with('success', 'Categoría eliminada correctamente.');
+    }
+
+    public function toggle(Category $category)
+    {
+        $category->update(['active' => ! $category->active]);
+
+        return Redirect::route('categories.index')->with(
+            'success',
+            $category->active ? 'Categoría activada correctamente.' : 'Categoría desactivada correctamente.'
+        );
     }
 }

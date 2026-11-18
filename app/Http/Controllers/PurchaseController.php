@@ -29,7 +29,7 @@ class PurchaseController extends Controller
     public function create()
     {
         $providers = Provider::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('active', true)->orderBy('name')->get();
         $oldItems = old('items', []);
         $selectedProductIds = collect($oldItems)->pluck('product_id')->filter()->unique();
         $selectedProducts = Product::whereIn('id', $selectedProductIds)->get()->keyBy('id');

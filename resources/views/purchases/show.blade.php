@@ -17,7 +17,7 @@
                 <div class="col-md-3"><strong>Registrada por:</strong> {{ $purchase->user?->name ?? 'N/A' }}</div>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table-mobile-cards table table-hover">
                     <thead>
                         <tr><th>Producto</th><th>Lote</th><th>Vencimiento</th><th>Cantidad recibida</th><th>Costo unitario</th><th>Subtotal</th></tr>
                     </thead>

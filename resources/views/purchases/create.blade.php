@@ -83,6 +83,7 @@
                     </section>
 
                     <h2 class="h5 mt-4">Productos recibidos</h2>
+                    <p class="text-muted">Ingresa la cantidad física que llegó. El inventario se actualizará una sola vez por la cantidad convertida a la unidad base.</p>
                     <div id="purchase-items">
                         @foreach($oldItems as $index => $item)
                             @php($selectedProduct = $selectedProducts->get($item['product_id'] ?? ''))
@@ -97,7 +98,7 @@
                                 <input type="hidden" name="items[{{ $index }}][product_id]" value="{{ $item['product_id'] ?? '' }}">
                                 <div class="form-row">
                                     <div class="form-group col-6 col-lg-2">
-                                        <label>Cantidad</label>
+                                        <label>Cantidad física recibida</label>
                                         <input type="number" name="items[{{ $index }}][quantity]" class="form-control form-control-lg" min="0.001" step="0.001" value="{{ $item['quantity'] ?? 1 }}" required>
                                     </div>
                                     <div class="form-group col-6 col-lg-2">
@@ -126,8 +127,10 @@
                     </div>
                     @error('items')<small class="text-danger d-block mb-2">{{ $message }}</small>@enderror
                     <hr>
-                    <button type="submit" id="submit-purchase" class="btn btn-primary btn-lg">Registrar compra y actualizar stock</button>
-                    <a href="{{ route('purchases.index') }}" class="btn btn-secondary btn-lg">Cancelar</a>
+                    <div class="form-actions">
+                        <button type="submit" id="submit-purchase" class="btn btn-primary">Registrar compra y actualizar stock</button>
+                        <a href="{{ route('purchases.index') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
                 </form>
             @endif
         </div>
@@ -212,7 +215,7 @@
 
                 const fields = document.createElement('div');
                 fields.className = 'form-row';
-                const quantity = createField(fields, 'Cantidad', `items[${index}][quantity]`, 'number', '1');
+                const quantity = createField(fields, 'Cantidad física recibida', `items[${index}][quantity]`, 'number', '1');
                 quantity.classList.add('form-control-lg');
                 quantity.min = '0.001';
                 quantity.step = '0.001';

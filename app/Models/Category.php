@@ -14,6 +14,13 @@ class Category extends Model
 
     protected $fillable = ['name', 'slug', 'description', 'active'];
 
+    protected function casts(): array
+    {
+        return [
+            'active' => 'boolean',
+        ];
+    }
+
     protected static function booted()
     {
         static::creating(function ($category) {

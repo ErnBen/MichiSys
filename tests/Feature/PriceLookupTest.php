@@ -94,4 +94,93 @@ class PriceLookupTest extends TestCase
             ->get(route('prices.index', ['search' => ['invalid']]))
             ->assertSessionHasErrors('search');
     }
+
+    public function test_sales_product_and_client_searches_are_limited_and_scoped(): void
+    {
+        $business = Business::create(['name' => 'Tienda A', 'owner_name' => 'Admin A']);
+        $cashier = User::factory()->create(['business_id' => $business->id, 'role' => 'cajero']);
+        $this->actingAs($cashier);
+        $category = Category::create(['name' => 'Alimentos', 'slug' => 'alimentos', 'active' => true]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Croquetas premium',
+            'sku' => 'CROQ-SEARCH',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 4,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+        \App\Models\Client::create([
+            'name' => 'Cliente buscable',
+            'document' => 'DOC-555',
+        ]);
+
+        $this->getJson(route('sales.products.search', ['search' => 'CROQ-SEARCH']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $product->id)
+            ->assertJsonPath('data.0.sellable_stock', 4);
+        $this->getJson(route('sales.clients.search', ['search' => 'DOC-555']))
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Cliente buscable');
+
+        $otherBusiness = Business::create(['name' => 'Tienda B', 'owner_name' => 'Admin B']);
+        $otherOwner = User::factory()->create(['business_id' => $otherBusiness->id, 'role' => 'dueno']);
+        $this->actingAs($otherOwner);
+        $otherCategory = Category::create(['name' => 'Alimentos', 'slug' => 'alimentos-b', 'active' => true]);
+        Product::create([
+            'category_id' => $otherCategory->id,
+            'name' => 'Croquetas ajenas',
+            'sku' => 'CROQ-SEARCH-B',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 4,
+            'stock_minimo' => 1,
+            'active' => true,
+        ]);
+
+        $this->actingAs($cashier)
+            ->getJson(route('sales.products.search', ['search' => 'CROQ-SEARCH']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonMissing(['name' => 'Croquetas ajenas']);
+    }
+
+    public function test_inventory_filters_products_by_search_and_low_stock_without_cross_business_results(): void
+    {
+        $business = Business::create(['name' => 'Tienda A', 'owner_name' => 'Admin A']);
+        $owner = User::factory()->create(['business_id' => $business->id, 'role' => 'dueno']);
+        $this->actingAs($owner);
+        $category = Category::create(['name' => 'Alimentos', 'slug' => 'alimentos', 'active' => true]);
+        Product::create([
+            'category_id' => $category->id,
+            'name' => 'Croquetas con stock bajo',
+            'sku' => 'LOW-01',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 1,
+            'stock_minimo' => 3,
+            'active' => true,
+        ]);
+        Product::create([
+            'category_id' => $category->id,
+            'name' => 'Croquetas con stock suficiente',
+            'sku' => 'OK-01',
+            'price' => 1000,
+            'cost' => 500,
+            'stock' => 10,
+            'stock_minimo' => 3,
+            'active' => true,
+        ]);
+
+        $this->get(route('products.index', ['search' => 'LOW-01', 'stock' => 'low']))
+            ->assertOk()
+            ->assertSeeText('Croquetas con stock bajo')
+            ->assertDontSeeText('Croquetas con stock suficiente');
+        $this->get(route('inventory.index', ['search' => 'LOW-01']))
+            ->assertOk()
+            ->assertSeeText('Croquetas con stock bajo')
+            ->assertDontSeeText('Croquetas con stock suficiente');
+    }
 }

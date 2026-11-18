@@ -13,7 +13,14 @@ class SaleCombo extends Model
 
     protected $table = 'sale_combo';
 
-    protected $fillable = ['sale_id', 'combo_id', 'quantity', 'price', 'subtotal'];
+    protected $fillable = ['sale_id', 'combo_id', 'quantity', 'price', 'subtotal', 'components_snapshot'];
+
+    protected function casts(): array
+    {
+        return [
+            'components_snapshot' => 'array',
+        ];
+    }
 
     public function sale()
     {

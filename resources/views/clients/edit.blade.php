@@ -11,8 +11,10 @@
                 @csrf
                 @method('PUT')
                 @include('clients.form')
-                <button type="submit" class="btn btn-primary mt-3">Actualizar</button>
-                <a href="{{ route('clients.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                    <a href="{{ route('clients.index') }}" class="btn btn-secondary">Cancelar</a>
+                </div>
             </form>
         </div>
     </div>

@@ -25,7 +25,7 @@ Route::middleware([
     'verified',
 ])->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware('role:dueno,admin,cajero,superadmin')
+        ->middleware(['role:dueno,admin,cajero,superadmin', 'business.context'])
         ->name('dashboard');
 
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin')->group(function (): void {
@@ -42,28 +42,39 @@ Route::middleware([
 
     Route::middleware(['role:dueno,admin,cajero,superadmin', 'business.context'])->group(function (): void {
         Route::get('/prices', [ProductController::class, 'priceLookup'])->name('prices.index');
+        Route::get('sales/products/search', [SaleController::class, 'productSearch'])->name('sales.products.search');
+        Route::get('sales/clients/search', [SaleController::class, 'clientSearch'])->name('sales.clients.search');
         Route::resource('sales', SaleController::class)->only(['index', 'create', 'store', 'show']);
         Route::get('sales/{sale}/receipt', [SaleController::class, 'receipt'])->name('sales.receipt');
         Route::get('sales/{sale}/receipt.pdf', [SaleController::class, 'receiptPdf'])->name('sales.receipt.pdf');
         Route::delete('sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
 
+        Route::middleware('role:dueno,admin,cajero,superadmin')->group(function (): void {
+            Route::get('/receivables', [ReceivableController::class, 'index'])->name('receivables.index');
+            Route::get('/receivables/{receivable}', [ReceivableController::class, 'show'])->name('receivables.show');
+            Route::post('/receivables/{receivable}/payments', [ReceivableController::class, 'storePayment'])->name('receivables.payments.store');
+        });
+
+        Route::middleware('role:dueno,admin,superadmin')->delete(
+            '/receivables/{receivable}/payments/{payment}',
+            [ReceivableController::class, 'reversePayment']
+        )->name('receivables.payments.reverse');
+
         Route::middleware('role:dueno,admin,superadmin')->group(function (): void {
             Route::get('/business/settings', [BusinessAdminController::class, 'editSettings'])->name('business.settings.edit');
             Route::put('/business/settings', [BusinessAdminController::class, 'updateSettings'])->name('business.settings.update');
 
-            Route::get('/receivables', [ReceivableController::class, 'index'])->name('receivables.index');
-            Route::get('/receivables/{receivable}', [ReceivableController::class, 'show'])->name('receivables.show');
-            Route::post('/receivables/{receivable}/payments', [ReceivableController::class, 'storePayment'])->name('receivables.payments.store');
-            Route::delete('/receivables/{receivable}/payments/{payment}', [ReceivableController::class, 'reversePayment'])->name('receivables.payments.reverse');
-
             Route::get('purchases/products/search', [PurchaseController::class, 'productSearch'])->name('purchases.products.search');
             Route::resource('categories', CategoryController::class);
+            Route::put('categories/{category}/toggle', [CategoryController::class, 'toggle'])->name('categories.toggle');
+            Route::get('products/search', [ProductController::class, 'search'])->name('products.search');
             Route::resource('products', ProductController::class);
             Route::resource('combos', ComboController::class);
             Route::resource('clients', ClientController::class);
             Route::resource('providers', ProviderController::class);
             Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show']);
             Route::resource('recipes', RecipeController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+            Route::get('productions/recipes/search', [ProductionController::class, 'recipeSearch'])->name('productions.recipes.search');
             Route::resource('productions', ProductionController::class)->only(['index', 'create', 'store', 'show']);
             Route::resource('users', UserController::class);
 

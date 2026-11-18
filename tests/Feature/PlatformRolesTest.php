@@ -8,7 +8,9 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PlatformRolesTest extends TestCase
@@ -63,6 +65,7 @@ class PlatformRolesTest extends TestCase
         $this->actingAs($cashier)->get(route('products.index'))->assertForbidden();
         $this->get(route('inventory.index'))->assertForbidden();
         $this->get(route('business.settings.edit'))->assertForbidden();
+        $this->get(route('dashboard'))->assertRedirect(route('sales.create'));
     }
 
     public function test_superadmin_creates_a_business_and_associated_owner(): void
@@ -89,11 +92,32 @@ class PlatformRolesTest extends TestCase
             ->assertSeeText('Cuenta inicial del dueño');
         $this->get(route('superadmin.businesses.index'))
             ->assertOk()
-            ->assertSeeText('Nueva tienda');
+            ->assertSeeText('Nueva tienda')
+            ->assertSeeText('MichiSys');
         $this->get(route('superadmin.businesses.edit', $business))->assertOk();
         $this->get(route('superadmin.businesses.users', $business))->assertOk()
             ->assertSeeText('owner@nueva.test');
 
+    }
+
+    public function test_superadmin_can_filter_businesses_and_review_platform_counts(): void
+    {
+        $activeBusiness = Business::create(['name' => 'Negocio activo', 'owner_name' => 'Dueña activa', 'active' => true]);
+        $inactiveBusiness = Business::create(['name' => 'Negocio inactivo', 'owner_name' => 'Dueño inactivo', 'active' => false]);
+        User::factory()->create(['business_id' => $activeBusiness->id, 'role' => 'dueno']);
+        User::factory()->create(['business_id' => $inactiveBusiness->id, 'role' => 'dueno']);
+        $superadmin = User::factory()->create(['business_id' => null, 'role' => 'superadmin']);
+
+        $this->actingAs($superadmin)
+            ->get(route('superadmin.businesses.index', ['status' => 'inactive']))
+            ->assertOk()
+            ->assertSeeText('Negocio inactivo')
+            ->assertDontSeeText('Negocio activo')
+            ->assertViewHas('statistics.businesses', 3)
+            ->assertViewHas('statistics.active', 2)
+            ->assertViewHas('statistics.inactive', 1)
+            ->assertViewHas('statistics.owners', 2)
+            ->assertViewHas('statistics.users', 2);
     }
 
     public function test_owner_can_manage_their_business_profile(): void
@@ -114,6 +138,41 @@ class PlatformRolesTest extends TestCase
             'ruc' => '80012345-6',
             'description' => 'Descripción comercial',
         ]);
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSeeText('Tienda actualizada')
+            ->assertSee('css/michisys-touch.css');
+    }
+
+    public function test_owner_can_upload_a_logo_and_use_a_host_relative_public_url(): void
+    {
+        Storage::fake('public');
+        $business = Business::create(['name' => 'Tienda', 'owner_name' => 'Dueño']);
+        $owner = User::factory()->create(['business_id' => $business->id, 'role' => 'dueno']);
+        $logo = UploadedFile::fake()->createWithContent(
+            'logo.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC')
+        );
+
+        $this->actingAs($owner)
+            ->get(route('business.settings.edit'))
+            ->assertOk()
+            ->assertSee('enctype="multipart/form-data"', false)
+            ->assertSee('name="logo"', false);
+
+        $this->put(route('business.settings.update'), [
+            'name' => $business->name,
+            'owner_name' => $business->owner_name,
+            'logo' => $logo,
+        ])->assertRedirect(route('business.settings.edit'));
+
+        $storedLogo = $business->fresh()->logo;
+        $this->assertNotEmpty($storedLogo);
+        Storage::disk('public')->assertExists($storedLogo);
+        $this->assertSame('/storage/'.$storedLogo, Storage::disk('public')->url($storedLogo));
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('/storage/'.$storedLogo, false);
     }
 
     public function test_superadmin_login_redirects_to_the_platform_panel(): void
@@ -163,10 +222,14 @@ class PlatformRolesTest extends TestCase
         $business = Business::create(['name' => 'Tienda elegida', 'owner_name' => 'Dueño']);
         $superadmin = User::factory()->create(['business_id' => null, 'role' => 'superadmin']);
 
-        $this->actingAs($superadmin)->get(route('products.index'))->assertForbidden();
+        $this->actingAs($superadmin)
+            ->get(route('products.index'))
+            ->assertRedirect(route('superadmin.businesses.index'));
         $this->post(route('superadmin.businesses.select', $business))
             ->assertRedirect(route('dashboard'));
-        $this->get(route('products.index'))->assertOk();
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertSeeText('MichiSys · Tienda elegida');
         $this->post(route('users.store'), [
             'name' => 'Cajero asignado',
             'email' => 'selected-cashier@example.test',

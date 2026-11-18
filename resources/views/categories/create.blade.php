@@ -18,11 +18,14 @@
                     <textarea name="description" class="form-control" rows="4">{{ old('description') }}</textarea>
                 </div>
                 <div class="form-check">
-                    <input type="checkbox" name="active" class="form-check-input" id="active" checked>
+                    <input type="hidden" name="active" value="0">
+                    <input type="checkbox" name="active" value="1" class="form-check-input" id="active" @checked(old('active', true))>
                     <label class="form-check-label" for="active">Activo</label>
                 </div>
-                <button type="submit" class="btn btn-primary mt-3">Guardar</button>
-                <a href="{{ route('categories.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <a href="{{ route('categories.index') }}" class="btn btn-secondary">Cancelar</a>
+                </div>
             </form>
         </div>
     </div>

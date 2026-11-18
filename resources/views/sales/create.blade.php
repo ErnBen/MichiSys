@@ -3,7 +3,10 @@
 @section('title', 'Registrar venta')
 
 @section('content_header')
-    <h1>Registrar venta</h1>
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+        <h1>Punto de venta</h1>
+        <a href="#sale-summary" class="btn btn-success">Ver carrito y cobrar</a>
+    </div>
 @stop
 
 @section('content')
@@ -28,7 +31,11 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Buscar productos</h3>
-                        <a href="{{ route('prices.index') }}" class="btn btn-sm btn-outline-secondary float-right">Consultar precios</a>
+                        <div class="d-flex flex-wrap justify-content-end">
+                            <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-secondary mr-2">Historial de ventas</a>
+                            <a href="{{ route('receivables.index') }}" class="btn btn-sm btn-outline-secondary mr-2">Cuentas por cobrar</a>
+                            <a href="{{ route('prices.index') }}" class="btn btn-sm btn-outline-secondary">Consultar precios</a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <input
@@ -38,10 +45,22 @@
                             placeholder="Buscar por nombre o código"
                             aria-label="Buscar productos"
                         >
+                        <div class="form-group mt-3 mb-2">
+                            <label for="product-category-filter">Categoría</label>
+                            <select id="product-category-filter" class="form-control">
+                                <option value="">Todas las categorías</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div id="product-search-status" class="text-muted" role="status" aria-live="polite">
+                            Escribe el nombre o código para buscar hasta 24 productos.
+                        </div>
                     </div>
                 </div>
 
-                <div class="row" id="product-catalog">
+                <div class="row" id="product-catalog" data-search-url="{{ route('sales.products.search') }}">
                     @foreach($products as $product)
                         <div
                             class="col-sm-6 col-xl-4 catalog-item"
@@ -73,6 +92,7 @@
                                             name="product_ids[]"
                                             value="{{ $product->id }}"
                                             data-price="{{ $product->price }}"
+                                            data-stock="{{ min((int) $product->stock, (int) ($product->sellable_stock ?? 0)) }}"
                                             @disabled(($product->sellable_stock ?? 0) <= 0)
                                             @checked(in_array($product->id, (array) old('product_ids', []), true))
                                         >
@@ -108,7 +128,7 @@
                     <div class="card">
                         <div class="card-header"><h3 class="card-title">Combos</h3></div>
                         <div class="card-body">
-                            <div class="row">
+                                <div class="row" id="combo-catalog">
                                 @foreach($combos as $combo)
                                     <div class="col-md-6 catalog-item" data-search="{{ mb_strtolower($combo->name) }}">
                                         <div class="card h-100 sale-product-card">
@@ -131,6 +151,15 @@
                                                         name="combo_ids[]"
                                                         value="{{ $combo->id }}"
                                                         data-price="{{ $combo->price }}"
+                                                        data-components="{{ $combo->products->map(fn ($product) => [
+                                                            'id' => $product->id,
+                                                            'name' => $product->name,
+                                                            'quantity' => (int) $product->pivot->quantity,
+                                                            'unit' => mb_strtolower($product->unit_label),
+                                                            'available' => $product->active
+                                                                ? min((int) $product->stock, (int) ($product->sellable_stock ?? 0))
+                                                                : 0,
+                                                        ])->values()->toJson() }}"
                                                         @checked(in_array($combo->id, (array) old('combo_ids', []), true))
                                                     >
                                                 </div>
@@ -165,21 +194,26 @@
             </div>
 
             <div class="col-12 col-lg-4">
-                <div class="card sale-summary-card">
+                <div class="card sale-summary-card" id="sale-summary">
                     <div class="card-header"><h3 class="card-title">Carrito de venta</h3><span class="badge badge-primary float-right" id="cart-count">0</span></div>
                     <div class="card-body">
                         <div id="cart-empty" class="text-muted text-center py-3">Agrega productos o combos al carrito.</div>
                         <ul id="cart-items" class="list-group list-group-flush mb-3" aria-live="polite"></ul>
+                        <div id="cart-stock-status" class="alert alert-danger py-2" role="status" aria-live="polite" hidden></div>
                         <div class="form-group">
-                            <label for="client_id">Cliente</label>
-                            <select name="client_id" id="client_id" class="form-control">
-                                <option value="">Consumidor final</option>
-                                @foreach($clients as $client)
-                                    <option value="{{ $client->id }}" @selected(old('client_id') == $client->id)>
-                                        {{ $client->name }}{{ $client->phone ? ' ('.$client->phone.')' : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label for="client-search">Buscar cliente por nombre, documento o teléfono</label>
+                            <input id="client-search" type="search" class="form-control" placeholder="Escribe al menos 2 caracteres" autocomplete="off">
+                            <div id="client-search-status" class="small text-muted mt-1" role="status" aria-live="polite"></div>
+                            <div id="client-search-results" class="list-group mt-2" data-search-url="{{ route('sales.clients.search') }}"></div>
+                            <input type="hidden" name="client_id" id="client_id" value="{{ old('client_id', $selectedClient?->id) }}">
+                            <div id="selected-client" class="mt-2">
+                                @if($selectedClient)
+                                    <span class="badge badge-info">Cliente: {{ $selectedClient->name }}{{ $selectedClient->document ? ' · '.$selectedClient->document : '' }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary clear-client">Quitar</button>
+                                @else
+                                    <span class="text-muted">Consumidor final</span>
+                                @endif
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="payment_method">Método de pago</label>
@@ -265,12 +299,16 @@
                             <dt class="col-7 h4">Total</dt>
                             <dd class="col-5 text-right font-weight-bold h4" id="sale-total">Gs. 0</dd>
                         </dl>
-                        <button type="submit" id="confirm-sale" class="btn btn-success btn-lg btn-block py-3">Confirmar venta</button>
+                        <button type="submit" id="confirm-sale" class="btn btn-success btn-lg btn-block py-3" aria-label="Confirmar venta">Cobrar</button>
                         <a href="{{ route('sales.index') }}" class="btn btn-secondary btn-lg btn-block">Cancelar</a>
                     </div>
                 </div>
             </div>
         </div>
+        <aside class="pos-mobile-summary" aria-label="Resumen del carrito">
+            <div><small class="text-muted"><span id="mobile-cart-count">0</span> unidades</small><strong id="mobile-cart-total">Gs. 0</strong></div>
+            <a href="#sale-summary" class="btn btn-success btn-lg">Ver carrito y cobrar <i class="fas fa-arrow-right ml-1" aria-hidden="true"></i></a>
+        </aside>
     </form>
 @stop
 
@@ -291,8 +329,15 @@
     <script>
         (() => {
             const search = document.getElementById('product-search');
-            const checks = [...document.querySelectorAll('.sale-item-check')];
-            const quantities = [...document.querySelectorAll('.sale-item-quantity')];
+            const productCatalog = document.getElementById('product-catalog');
+            const productCategory = document.getElementById('product-category-filter');
+            const productSearchStatus = document.getElementById('product-search-status');
+            const comboCatalog = document.getElementById('combo-catalog');
+            const clientSearch = document.getElementById('client-search');
+            const clientSearchResults = document.getElementById('client-search-results');
+            const clientSearchStatus = document.getElementById('client-search-status');
+            const selectedClient = document.getElementById('selected-client');
+            const checks = () => [...document.querySelectorAll('.sale-item-check')];
             const discount = document.getElementById('discount');
             const currency = new Intl.NumberFormat('es-PY', { maximumFractionDigits: 0 });
             const paymentMethod = document.getElementById('payment_method');
@@ -306,10 +351,11 @@
             const cartList = document.getElementById('cart-items');
             const cartEmpty = document.getElementById('cart-empty');
             const cartCount = document.getElementById('cart-count');
+            const cartStockStatus = document.getElementById('cart-stock-status');
 
             const updateTotals = () => {
                 let subtotal = 0;
-                checks.forEach((checkbox) => {
+                checks().forEach((checkbox) => {
                     if (!checkbox.checked) return;
                     const quantity = document.getElementById(
                         checkbox.name.startsWith('combo_')
@@ -322,6 +368,7 @@
                 document.getElementById('sale-subtotal').textContent = currency.format(subtotal);
                 document.getElementById('sale-discount').textContent = currency.format(Number(discount.value || 0));
                 document.getElementById('sale-total').textContent = `Gs. ${currency.format(reducedSubtotal)}`;
+                document.getElementById('mobile-cart-total').textContent = `Gs. ${currency.format(reducedSubtotal)}`;
                 const received = Number(cashReceived.value || 0);
                 document.getElementById('change-due').textContent =
                     `Gs. ${currency.format(Math.max(received - reducedSubtotal, 0))}`;
@@ -333,7 +380,6 @@
                 electronicFields.hidden = !['bank_transfer', 'qr', 'debit_card', 'credit_card', 'other'].includes(method);
                 creditFields.hidden = method !== 'credit';
                 cashReceived.required = method === 'cash';
-                client.required = method === 'credit';
                 updateTotals();
             };
 
@@ -343,10 +389,78 @@
                     : `product-quantity-${checkbox.value}`
             );
 
+            const validateCartStock = () => {
+                const requirements = new Map();
+                let comboQuantity = 0;
+                let hasIndividualProducts = false;
+
+                const addRequirement = (id, name, unit, quantity, available) => {
+                    const key = String(id);
+                    const requirement = requirements.get(key) || {name, unit, quantity: 0, available};
+                    requirement.quantity += quantity;
+                    requirement.available = available;
+                    requirements.set(key, requirement);
+                };
+
+                checks().forEach(checkbox => {
+                    if (!checkbox.checked) return;
+                    const quantity = Number(quantityFor(checkbox).value || 0);
+
+                    if (checkbox.name.startsWith('combo_')) {
+                        comboQuantity += quantity;
+                        JSON.parse(checkbox.dataset.components || '[]').forEach(component => {
+                            addRequirement(
+                                component.id,
+                                component.name,
+                                component.unit,
+                                Number(component.quantity) * quantity,
+                                Number(component.available)
+                            );
+                        });
+                        return;
+                    }
+
+                    hasIndividualProducts = true;
+                    const card = checkbox.closest('.catalog-item');
+                    addRequirement(
+                        checkbox.value,
+                        card.querySelector('.card-title')?.textContent?.trim() || 'Producto',
+                        card.querySelector('.sale-item-quantity')?.getAttribute('aria-label')?.replace('Cantidad en ', '') || 'unidades',
+                        quantity,
+                        Number(checkbox.dataset.stock || 0)
+                    );
+                });
+
+                const shortages = [...requirements.values()]
+                    .filter(item => item.quantity > item.available);
+                cartStockStatus.replaceChildren();
+
+                if (shortages.length) {
+                    const formatQuantity = (quantity, unit) =>
+                        `${quantity} ${unit === 'unidades' ? (quantity === 1 ? 'unidad' : 'unidades') : unit}`;
+                    const heading = document.createElement('strong');
+                    heading.textContent = !hasIndividualProducts && comboQuantity > 0
+                        ? `Stock insuficiente para vender ${comboQuantity} ${comboQuantity === 1 ? 'combo' : 'combos'}.`
+                        : 'Stock insuficiente para confirmar la venta.';
+                    const list = document.createElement('ul');
+                    list.className = 'mb-0 mt-1 pl-3';
+                    shortages.forEach(item => {
+                        const detail = document.createElement('li');
+                        const missing = item.quantity - item.available;
+                        detail.textContent = `${item.name}: se necesitan ${formatQuantity(item.quantity, item.unit)}; disponibles ${formatQuantity(item.available, item.unit)}; ${missing === 1 ? 'falta' : 'faltan'} ${formatQuantity(missing, item.unit)}.`;
+                        list.append(detail);
+                    });
+                    cartStockStatus.append(heading, list);
+                }
+
+                cartStockStatus.hidden = shortages.length === 0;
+                return shortages.length === 0;
+            };
+
             const renderCart = () => {
                 cartList.replaceChildren();
                 let count = 0;
-                checks.forEach(checkbox => {
+                checks().forEach(checkbox => {
                     if (!checkbox.checked) return;
                     const quantity = quantityFor(checkbox);
                     const card = checkbox.closest('.catalog-item');
@@ -361,47 +475,263 @@
                     remove.className = 'btn btn-sm btn-outline-danger cart-remove';
                     remove.dataset.checkbox = checkbox.id;
                     remove.textContent = 'Quitar';
-                    item.append(label, remove);
+                    label.className = 'cart-line-name';
+                    const controls = document.createElement('div');
+                    controls.className = 'cart-line-controls';
+                    [-1, 1].forEach(step => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'btn btn-outline-secondary quantity-step';
+                        button.dataset.target = quantity.id;
+                        button.dataset.step = String(step);
+                        button.setAttribute('aria-label', `${step > 0 ? 'Aumentar' : 'Disminuir'} cantidad de ${name}`);
+                        button.textContent = step > 0 ? '+' : '−';
+                        controls.append(button);
+                    });
+                    controls.append(remove);
+                    item.append(label, controls);
                     cartList.append(item);
                     count += Number(quantity.value || 0);
                 });
                 cartEmpty.hidden = cartList.children.length > 0;
                 cartCount.textContent = String(count);
+                document.getElementById('mobile-cart-count').textContent = String(count);
+                confirmButton.disabled = count === 0 || !validateCartStock();
+                checks().forEach(checkbox => {
+                    const button = document.querySelector(`[data-checkbox="${checkbox.id}"]`);
+                    button?.setAttribute('aria-pressed', String(checkbox.checked));
+                });
                 updateTotals();
             };
 
-            search.addEventListener('input', () => {
-                const term = search.value.trim().toLocaleLowerCase();
-                document.querySelectorAll('.catalog-item').forEach((item) => {
-                    item.hidden = !item.dataset.search.includes(term);
-                });
-            });
+            const makeProductCard = product => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'col-sm-6 col-xl-4 catalog-item';
+                wrapper.dataset.search = `${product.name} ${product.sku || ''}`.toLocaleLowerCase();
 
-            checks.forEach(checkbox => checkbox.addEventListener('change', () => {
-                const button = document.querySelector(`[data-checkbox="${checkbox.id}"]`);
-                if (button) button.textContent = checkbox.checked ? 'Quitar del carrito' : 'Agregar al carrito';
+                const card = document.createElement('div');
+                card.className = 'card h-100 sale-product-card';
+                const body = document.createElement('div');
+                body.className = 'card-body';
+                const name = document.createElement('h5');
+                name.className = 'card-title';
+                name.textContent = product.name;
+                const code = document.createElement('p');
+                code.className = 'text-muted mb-1';
+                code.textContent = `${product.sku ? `Código: ${product.sku} · ` : ''}${product.category || 'Sin categoría'}`;
+                const price = document.createElement('p');
+                price.className = 'h5 mb-1';
+                price.textContent = `Gs. ${currency.format(Number(product.price))}`;
+                const stock = document.createElement('p');
+                stock.className = 'text-muted mb-2';
+                stock.textContent = `Disponible: ${product.sellable_stock} ${product.unit_label}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'sale-item-check d-none';
+                checkbox.id = `product-${product.id}`;
+                checkbox.name = 'product_ids[]';
+                checkbox.value = product.id;
+                checkbox.dataset.price = product.price;
+
+                const quantityRow = document.createElement('div');
+                quantityRow.className = 'input-group input-group-lg quantity-control mt-3';
+                const decrementWrap = document.createElement('div');
+                decrementWrap.className = 'input-group-prepend';
+                const decrement = document.createElement('button');
+                decrement.type = 'button';
+                decrement.className = 'btn btn-outline-secondary quantity-step';
+                decrement.dataset.target = `product-quantity-${product.id}`;
+                decrement.dataset.step = '-1';
+                decrement.setAttribute('aria-label', 'Disminuir cantidad');
+                decrement.textContent = '−';
+                decrementWrap.append(decrement);
+
+                const quantity = document.createElement('input');
+                quantity.type = 'number';
+                quantity.id = `product-quantity-${product.id}`;
+                quantity.name = `product_quantities[${product.id}]`;
+                quantity.value = '1';
+                quantity.min = '1';
+                quantity.max = String(product.sellable_stock);
+                quantity.className = 'form-control sale-item-quantity text-center';
+                quantity.setAttribute('aria-label', `Cantidad en ${product.unit_label}`);
+
+                const incrementWrap = document.createElement('div');
+                incrementWrap.className = 'input-group-append';
+                const increment = document.createElement('button');
+                increment.type = 'button';
+                increment.className = 'btn btn-outline-secondary quantity-step';
+                increment.dataset.target = `product-quantity-${product.id}`;
+                increment.dataset.step = '1';
+                increment.setAttribute('aria-label', 'Aumentar cantidad');
+                increment.textContent = '+';
+                incrementWrap.append(increment);
+                quantityRow.append(decrementWrap, quantity, incrementWrap);
+
+                const add = document.createElement('button');
+                add.type = 'button';
+                add.className = 'btn btn-success btn-lg btn-block mt-2 sale-add-button';
+                add.dataset.checkbox = checkbox.id;
+                add.textContent = 'Agregar al carrito';
+
+                body.append(name, code, price, stock, checkbox, quantityRow, add);
+                if (product.image_url) {
+                    const image = document.createElement('img');
+                    image.src = product.image_url;
+                    image.alt = product.name;
+                    image.loading = 'lazy';
+                    image.className = 'card-img-top';
+                    card.append(image);
+                }
+                card.append(body);
+                wrapper.append(card);
+                return wrapper;
+            };
+
+            let searchTimer;
+            let activeSearch;
+            const findProducts = () => {
+                window.clearTimeout(searchTimer);
+                const term = search.value.trim();
+                const categoryId = productCategory.value;
+                comboCatalog?.querySelectorAll('.catalog-item').forEach(item => {
+                    item.hidden = !item.dataset.search.includes(term.toLocaleLowerCase());
+                });
+                searchTimer = window.setTimeout(async () => {
+                    activeSearch?.abort();
+                    activeSearch = new AbortController();
+                    productSearchStatus.textContent = 'Buscando productos…';
+                    const params = new URLSearchParams({search: term, category_id: categoryId});
+                    try {
+                        const response = await fetch(`${productCatalog.dataset.searchUrl}?${params}`, {
+                            headers: {'Accept': 'application/json'},
+                            signal: activeSearch.signal
+                        });
+                        if (!response.ok) throw new Error('No se pudo completar la búsqueda de productos.');
+                        const payload = await response.json();
+                        const selected = [...productCatalog.querySelectorAll('.catalog-item')]
+                            .filter(item => item.querySelector('.sale-item-check')?.checked);
+                        productCatalog.replaceChildren(...selected);
+                        payload.data.forEach(product => {
+                            if (!document.getElementById(`product-${product.id}`)) {
+                                productCatalog.append(makeProductCard(product));
+                            }
+                        });
+                        productSearchStatus.textContent = payload.data.length
+                            ? `${payload.data.length} producto(s). Se muestran hasta 24 resultados.`
+                            : (selected.length ? 'No hay más resultados. Se conservaron los productos del carrito.' : 'No se encontraron productos disponibles.');
+                    } catch (error) {
+                        if (error.name === 'AbortError') return;
+                        productSearchStatus.textContent = error.message || 'Ocurrió un error al buscar productos.';
+                    }
+                }, 250);
+            };
+
+            search.addEventListener('input', findProducts);
+            productCategory.addEventListener('change', findProducts);
+            let clientTimer;
+            let activeClientSearch;
+            clientSearch.addEventListener('input', () => {
+                window.clearTimeout(clientTimer);
+                clientTimer = window.setTimeout(async () => {
+                    activeClientSearch?.abort();
+                    const term = clientSearch.value.trim();
+                    clientSearchResults.replaceChildren();
+                    if (term.length < 2) {
+                        clientSearchStatus.textContent = 'Escribe al menos 2 caracteres para buscar.';
+                        return;
+                    }
+
+                    activeClientSearch = new AbortController();
+                    clientSearchStatus.textContent = 'Buscando clientes…';
+                    try {
+                        const params = new URLSearchParams({search: term});
+                        const response = await fetch(`${clientSearchResults.dataset.searchUrl}?${params}`, {
+                            headers: {'Accept': 'application/json'},
+                            signal: activeClientSearch.signal
+                        });
+                        if (!response.ok) throw new Error('No se pudo completar la búsqueda de clientes.');
+                        const payload = await response.json();
+                        payload.data.forEach(clientOption => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'list-group-item list-group-item-action';
+                            button.dataset.clientId = clientOption.id;
+                            button.dataset.clientName = clientOption.name;
+                            button.dataset.clientDocument = clientOption.document || '';
+                            button.textContent = `${clientOption.name}${clientOption.document ? ` · ${clientOption.document}` : ''}${clientOption.phone ? ` · ${clientOption.phone}` : ''}`;
+                            clientSearchResults.append(button);
+                        });
+                        clientSearchStatus.textContent = payload.data.length
+                            ? `${payload.data.length} resultado(s). Se muestran hasta 20.`
+                            : 'No se encontraron clientes.';
+                    } catch (error) {
+                        if (error.name === 'AbortError') return;
+                        clientSearchStatus.textContent = error.message || 'Ocurrió un error al buscar clientes.';
+                    }
+                }, 250);
+            });
+            clientSearchResults.addEventListener('click', event => {
+                const button = event.target.closest('[data-client-id]');
+                if (!button) return;
+                client.value = button.dataset.clientId;
+                selectedClient.replaceChildren();
+                const label = document.createElement('span');
+                label.className = 'badge badge-info';
+                label.textContent = `Cliente: ${button.dataset.clientName}${button.dataset.clientDocument ? ` · ${button.dataset.clientDocument}` : ''}`;
+                const clear = document.createElement('button');
+                clear.type = 'button';
+                clear.className = 'btn btn-sm btn-outline-secondary clear-client ml-2';
+                clear.textContent = 'Quitar';
+                selectedClient.append(label, clear);
+                clientSearchResults.replaceChildren();
+                clientSearchStatus.textContent = 'Cliente seleccionado.';
+            });
+            selectedClient.addEventListener('click', event => {
+                if (!event.target.closest('.clear-client')) return;
+                client.value = '';
+                selectedClient.replaceChildren();
+                const label = document.createElement('span');
+                label.className = 'text-muted';
+                label.textContent = 'Consumidor final';
+                selectedClient.append(label);
+            });
+            form.addEventListener('change', event => {
+                if (!event.target.matches('.sale-item-check')) return;
+                const button = document.querySelector(`[data-checkbox="${event.target.id}"]`);
+                if (button) button.textContent = event.target.checked ? 'Quitar del carrito' : 'Agregar al carrito';
                 renderCart();
-            }));
-            document.querySelectorAll('.sale-add-button').forEach(button => button.addEventListener('click', () => {
-                const checkbox = document.getElementById(button.dataset.checkbox);
-                checkbox.checked = !checkbox.checked;
-                checkbox.dispatchEvent(new Event('change', {bubbles: true}));
-            }));
-            document.querySelectorAll('.quantity-step').forEach(button => button.addEventListener('click', () => {
-                const input = document.getElementById(button.dataset.target);
-                const min = Number(input.min || 1);
-                const max = Number(input.max || Number.MAX_SAFE_INTEGER);
-                input.value = String(Math.min(max, Math.max(min, Number(input.value || min) + Number(button.dataset.step))));
-                input.dispatchEvent(new Event('input', {bubbles: true}));
-            }));
+            });
+            form.addEventListener('input', event => {
+                if (event.target.matches('.sale-item-quantity')) renderCart();
+            });
+            form.addEventListener('click', event => {
+                const addButton = event.target.closest('.sale-add-button');
+                if (addButton) {
+                    const checkbox = document.getElementById(addButton.dataset.checkbox);
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+                    return;
+                }
+
+                const stepButton = event.target.closest('.quantity-step');
+                if (stepButton) {
+                    const input = document.getElementById(stepButton.dataset.target);
+                    const min = Number(input.min || 1);
+                    const max = Number(input.max || Number.MAX_SAFE_INTEGER);
+                    input.value = String(Math.min(max, Math.max(min, Number(input.value || min) + Number(stepButton.dataset.step))));
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                }
+            });
             cartList.addEventListener('click', event => {
                 const button = event.target.closest('.cart-remove');
                 if (!button) return;
                 const checkbox = document.getElementById(button.dataset.checkbox);
+                if (!checkbox) return;
                 checkbox.checked = false;
                 checkbox.dispatchEvent(new Event('change', {bubbles: true}));
             });
-            quantities.forEach(input => input.addEventListener('input', renderCart));
             discount.addEventListener('input', updateTotals);
             cashReceived.addEventListener('input', updateTotals);
             paymentMethod.addEventListener('change', updatePaymentFields);

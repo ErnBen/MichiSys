@@ -20,7 +20,7 @@
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -45,14 +45,22 @@
                                     <span class="text-muted">Sin productos</span>
                                 @endforelse
                             </td>
-                            <td>
-                                <a href="{{ route('providers.edit', $provider) }}" class="btn btn-sm btn-warning">Editar</a>
-                                <a href="{{ route('providers.show', $provider) }}" class="btn btn-sm btn-info">Ver</a>
-                                <form action="{{ route('providers.destroy', $provider) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar proveedor?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger">Eliminar</button>
-                                </form>
+                            <td class="table-row-actions-cell">
+                                <div class="table-row-actions">
+                                    <a href="{{ route('providers.edit', $provider) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <a href="{{ route('providers.show', $provider) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye" aria-hidden="true"></i><span>Ver</span>
+                                    </a>
+                                    <form action="{{ route('providers.destroy', $provider) }}" method="POST" onsubmit="return confirm('¿Eliminar proveedor?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i><span>Eliminar</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

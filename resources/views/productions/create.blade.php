@@ -6,23 +6,23 @@
 @section('content')
     @include('shared.alerts')
     <div class="card"><div class="card-body">
-        @if($recipes->isEmpty())
-            <div class="alert alert-warning">Primero crea una receta activa con al menos un insumo.</div>
-        @else
-            <form action="{{ route('productions.store') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label for="recipe_id">Receta</label>
-                    <select id="recipe_id" name="recipe_id" class="form-control" required>
-                        <option value="">Seleccionar receta</option>
-                        @foreach($recipes as $recipe)
-                            <option value="{{ $recipe->id }}" @selected(old('recipe_id') == $recipe->id)>
-                                {{ $recipe->product->name }} — rendimiento {{ $recipe->yield_quantity }} {{ $recipe->product->unit_label }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('recipe_id')<small class="text-danger">{{ $message }}</small>@enderror
+        <form action="{{ route('productions.store') }}" method="POST">
+            @csrf
+            <div class="form-group">
+                <div class="product-selector" data-product-selector data-mode="single" data-result-label="label" data-search-url="{{ route('productions.recipes.search') }}">
+                    <label for="recipe-search">Buscar producto con receta</label>
+                    <input id="recipe-search" type="search" class="form-control mb-2" data-product-query placeholder="Nombre o código" autocomplete="off">
+                    <div class="small text-muted mb-2" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres.</div>
+                    <div class="list-group mb-2" data-product-results></div>
+                    <input type="hidden" id="recipe_id" name="recipe_id" value="{{ old('recipe_id', $recipes->first()?->id) }}" data-product-selected-id>
+                    <div class="font-weight-bold" data-product-selected>
+                    @if($recipes->isNotEmpty())
+                        {{ $recipes->first()->product->name }} — rendimiento {{ $recipes->first()->yield_quantity }} {{ $recipes->first()->product->unit_label }}
+                    @endif
+                    </div>
                 </div>
+                @error('recipe_id')<small class="text-danger">{{ $message }}</small>@enderror
+            </div>
                 <div class="form-group">
                     <label for="quantity">Cantidad final en unidad base</label>
                     <input id="quantity" type="number" name="quantity" class="form-control" min="1" step="1" value="{{ old('quantity', 1) }}" required>
@@ -40,9 +40,11 @@
                         @error('expires_at')<small class="text-danger">{{ $message }}</small>@enderror
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Registrar producción</button>
-                <a href="{{ route('productions.index') }}" class="btn btn-secondary">Cancelar</a>
-            </form>
-        @endif
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Registrar producción</button>
+                    <a href="{{ route('productions.index') }}" class="btn btn-secondary">Cancelar</a>
+                </div>
+        </form>
     </div></div>
+    @include('shared.product-selector-script')
 @stop

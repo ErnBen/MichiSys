@@ -17,10 +17,10 @@
     <div class="card">
         <div class="card-body">
             <div class="row">
-                <div class="col-6 col-lg-3 mb-3"><strong>Cliente</strong><br>{{ $receivable->client->name }}</div>
+                <div class="col-6 col-lg-3 mb-3"><strong>Cliente</strong><br>{{ $receivable->client->name }} @if($receivable->client->document) <span class="text-muted">({{ $receivable->client->document }})</span> @endif</div>
                 <div class="col-6 col-lg-3 mb-3"><strong>Creada</strong><br>{{ $receivable->created_at->format('d/m/Y H:i') }}</div>
                 <div class="col-6 col-lg-3 mb-3"><strong>Vencimiento</strong><br>{{ $receivable->due_date?->format('d/m/Y') ?? 'Sin vencimiento' }}</div>
-                <div class="col-6 col-lg-3 mb-3"><strong>Estado</strong><br>{{ ['pending' => 'Pendiente', 'partially_paid' => 'Parcialmente pagada', 'paid' => 'Pagada', 'overdue' => 'Vencida'][$state] }}</div>
+                <div class="col-6 col-lg-3 mb-3"><strong>Estado</strong><br>{{ ['pending' => 'Pendiente', 'partially_paid' => 'Parcialmente pagada', 'paid' => 'Pagada', 'overdue' => 'Vencida', 'cancelled' => 'Cancelada por anulación de venta'][$state] }}</div>
                 <div class="col-6 col-lg-4 mb-3"><strong>Deuda original</strong><br>Gs. {{ number_format($receivable->original_amount, 0, ',', '.') }}</div>
                 <div class="col-6 col-lg-4 mb-3"><strong>Total pagado</strong><br>Gs. {{ number_format($receivable->paid_amount, 0, ',', '.') }}</div>
                 <div class="col-12 col-lg-4 mb-3"><strong>Saldo pendiente</strong><br><span class="h4">Gs. {{ number_format($receivable->balance, 0, ',', '.') }}</span></div>
@@ -34,7 +34,7 @@
     @if((float) $receivable->balance > 0)
         <div class="card card-primary">
             <div class="card-header"><h2 class="card-title">Registrar pago</h2></div>
-            <form method="POST" action="{{ route('receivables.payments.store', $receivable) }}">
+            <form method="POST" action="{{ route('receivables.payments.store', $receivable) }}" data-confirm-payment>
                 @csrf
                 <input type="hidden" name="idempotency_key" value="{{ $paymentIdempotencyKey }}">
                 <div class="card-body row">
@@ -77,7 +77,7 @@
     <div class="card">
         <div class="card-header"><h2 class="card-title">Pagos de esta deuda</h2></div>
         <div class="card-body table-responsive">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead><tr><th>Fecha</th><th>Importe</th><th>Método</th><th>Referencia</th><th>Registrado por</th><th>Estado</th><th></th></tr></thead>
                 <tbody>
                     @forelse($receivable->payments as $payment)
@@ -112,7 +112,7 @@
     <div class="card">
         <div class="card-header"><h2 class="card-title">Historial de cuentas del cliente: {{ $receivable->client->name }}</h2></div>
         <div class="card-body table-responsive">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead><tr><th>Venta</th><th>Fecha</th><th>Importe original</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead>
                 <tbody>
                     @foreach($clientHistory as $history)
@@ -122,7 +122,7 @@
                             <td>Gs. {{ number_format($history->original_amount, 0, ',', '.') }}</td>
                             <td>Gs. {{ number_format($history->paid_amount, 0, ',', '.') }}</td>
                             <td>Gs. {{ number_format($history->balance, 0, ',', '.') }}</td>
-                            <td>{{ ['pending' => 'Pendiente', 'partially_paid' => 'Parcialmente pagada', 'paid' => 'Pagada', 'overdue' => 'Vencida'][$history->current_status] }}</td>
+                            <td>{{ ['pending' => 'Pendiente', 'partially_paid' => 'Parcialmente pagada', 'paid' => 'Pagada', 'overdue' => 'Vencida', 'cancelled' => 'Cancelada'][$history->current_status] }}</td>
                         </tr>
                     @endforeach
                 </tbody>

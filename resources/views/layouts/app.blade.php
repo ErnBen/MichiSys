@@ -15,9 +15,10 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- Styles -->
+        <link rel="stylesheet" href="{{ asset('css/michisys-touch.css') }}">
         @livewireStyles
     </head>
-    <body class="font-sans antialiased">
+    <body class="font-sans antialiased michisys-account">
         <x-banner />
 
         <div class="min-h-screen bg-gray-100">

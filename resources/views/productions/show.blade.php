@@ -22,7 +22,7 @@
             </div>
             <h5>Insumos consumidos</h5>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table-mobile-cards table table-hover">
                     <thead><tr><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Costo por unidad base</th><th>Costo total</th></tr></thead>
                     <tbody>
                         @foreach($production->items as $item)

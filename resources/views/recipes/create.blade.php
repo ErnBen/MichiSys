@@ -9,8 +9,10 @@
         <form action="{{ route('recipes.store') }}" method="POST">
             @csrf
             @include('recipes.form')
-            <button type="submit" class="btn btn-primary mt-3">Guardar receta</button>
-            <a href="{{ route('recipes.index') }}" class="btn btn-secondary mt-3">Cancelar</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar receta</button>
+                <a href="{{ route('recipes.index') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
         </form>
     </div></div>
 @stop

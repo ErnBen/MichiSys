@@ -13,11 +13,12 @@ class ClientController extends Controller
     {
         $search = $request->input('search');
 
-        $clients = Client::when($search, fn ($query) =>
+        $clients = Client::when($search, fn ($query) => $query->where(fn ($query) =>
             $query->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-        )
+            ->orWhere('document', 'like', "%{$search}%")
+            ->orWhere('email', 'like', "%{$search}%")
+            ->orWhere('phone', 'like', "%{$search}%")
+        ))
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
@@ -34,6 +35,7 @@ class ClientController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'document' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
@@ -58,6 +60,7 @@ class ClientController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'document' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',

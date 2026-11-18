@@ -3,6 +3,10 @@
     <input type="text" name="name" value="{{ old('name', $client?->name) }}" class="form-control" required>
 </div>
 <div class="form-group">
+    <label>Documento</label>
+    <input type="text" name="document" value="{{ old('document', $client?->document) }}" class="form-control" maxlength="50">
+</div>
+<div class="form-group">
     <label>Email</label>
     <input type="email" name="email" value="{{ old('email', $client?->email) }}" class="form-control">
 </div>

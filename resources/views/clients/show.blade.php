@@ -9,6 +9,8 @@
             <dl class="row">
                 <dt class="col-sm-3">Nombre</dt>
                 <dd class="col-sm-9">{{ $client->name }}</dd>
+                <dt class="col-sm-3">Documento</dt>
+                <dd class="col-sm-9">{{ $client->document ?: '—' }}</dd>
                 <dt class="col-sm-3">Email</dt>
                 <dd class="col-sm-9">{{ $client->email }}</dd>
                 <dt class="col-sm-3">Teléfono</dt>

@@ -22,11 +22,38 @@ class ProductionController extends Controller
         return view('productions.index', compact('productions'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $recipes = Recipe::with('product')->where('active', true)->orderBy('product_id')->get();
+        $selectedRecipeIds = collect([$request->old('recipe_id')])->filter()->unique();
+        $recipes = Recipe::with('product')
+            ->where('active', true)
+            ->whereIn('id', $selectedRecipeIds)
+            ->get();
 
         return view('productions.create', compact('recipes'));
+    }
+
+    public function recipeSearch(Request $request)
+    {
+        $filters = $request->validate(['search' => 'required|string|min:2|max:100']);
+        $search = trim($filters['search']);
+        $recipes = Recipe::query()
+            ->where('active', true)
+            ->whereHas('product', fn ($query) => $query
+                ->where('active', true)
+                ->where(fn ($query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")))
+            ->with('product:id,name,sku,unit')
+            ->orderBy('product_id')
+            ->limit(20)
+            ->get()
+            ->map(fn (Recipe $recipe): array => [
+                'id' => $recipe->id,
+                'label' => "{$recipe->product->name} — rendimiento {$recipe->yield_quantity} {$recipe->product->unit_label}",
+            ]);
+
+        return response()->json(['data' => $recipes]);
     }
 
     public function store(Request $request, InventoryService $inventory)

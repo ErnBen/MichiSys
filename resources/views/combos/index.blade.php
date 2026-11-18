@@ -2,8 +2,13 @@
 @section('title', 'Combos')
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
-        <h1>Combos</h1>
-        <a href="{{ route('combos.create') }}" class="btn btn-primary">Nuevo Combo</a>
+        <div>
+            <h1>Combos</h1>
+            <p class="page-subtitle mb-0">Paquetes de productos listos para ofrecer a tus clientes.</p>
+        </div>
+        <a href="{{ route('combos.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus mr-2" aria-hidden="true"></i>Nuevo combo
+        </a>
     </div>
 @stop
 @section('content')
@@ -12,15 +17,15 @@
         <div class="card-header">
             <form method="GET" action="{{ route('combos.index') }}" class="form-inline">
                 <div class="input-group">
-                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Buscar combos...">
+                    <input type="search" name="search" value="{{ $search }}" class="form-control" placeholder="Buscar combos..." aria-label="Buscar combos">
                     <div class="input-group-append">
-                        <button class="btn btn-secondary" type="submit">Buscar</button>
+                        <button class="btn btn-secondary" type="submit"><i class="fas fa-search mr-2" aria-hidden="true"></i>Buscar</button>
                     </div>
                 </div>
             </form>
         </div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-hover">
+            <table class="table-mobile-cards table table-hover">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -35,38 +40,53 @@
                         <tr>
                             <td>{{ $combo->name }}</td>
                             <td>
-                                @forelse($combo->products as $product)
-                                    <div>{{ $product->name }} × {{ $product->pivot->quantity }}</div>
-                                @empty
-                                    <span class="text-warning">Sin productos</span>
-                                    <div><small class="text-muted">Agrega al menos un producto para poder activarlo.</small></div>
-                                @endforelse
+                                <div class="combo-product-list">
+                                    @forelse($combo->products as $product)
+                                        <span class="combo-product-chip">
+                                            <span>{{ $product->name }}</span>
+                                            <strong>× {{ $product->pivot->quantity }}</strong>
+                                        </span>
+                                    @empty
+                                        <span class="combo-empty-label"><i class="fas fa-exclamation-circle mr-1" aria-hidden="true"></i>Sin productos</span>
+                                        <small class="combo-empty-help">Agrega al menos un producto para poder activarlo.</small>
+                                    @endforelse
+                                </div>
                             </td>
                             <td>{{ number_format($combo->price, 2) }}</td>
                             <td>{!! $combo->active ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>' !!}</td>
-                            <td>
-                                <a href="{{ route('combos.edit', $combo) }}" class="btn btn-sm btn-warning">Editar</a>
-                                <a href="{{ route('combos.show', $combo) }}" class="btn btn-sm btn-info">Ver</a>
-                                <form action="{{ route('combos.toggle', $combo) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('PUT')
-                                    <button
-                                        class="btn btn-sm {{ $combo->active ? 'btn-secondary' : 'btn-success' }}"
-                                        @disabled(! $combo->active && $combo->products->isEmpty())
-                                        title="{{ ! $combo->active && $combo->products->isEmpty() ? 'Edítalo y agrega productos antes de activarlo' : '' }}"
-                                    >{{ $combo->active ? 'Desactivar' : 'Activar' }}</button>
-                                </form>
-                                @if($combo->sales_count > 0)
-                                    <button class="btn btn-sm btn-danger" disabled title="El combo tiene ventas asociadas y no se puede borrar">
-                                        Eliminar ({{ $combo->sales_count }} venta(s))
-                                    </button>
-                                    <div><small class="text-muted">Se conserva para no alterar las ventas históricas.</small></div>
-                                @else
-                                    <form action="{{ route('combos.destroy', $combo) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar combo? Esta acción no se puede deshacer.');">
+                            <td class="combo-actions-cell">
+                                <div class="combo-actions">
+                                    <a href="{{ route('combos.edit', $combo) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <a href="{{ route('combos.show', $combo) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye" aria-hidden="true"></i><span>Ver</span>
+                                    </a>
+                                    <form action="{{ route('combos.toggle', $combo) }}" method="POST">
                                         @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-danger">Eliminar</button>
+                                        @method('PUT')
+                                        <button
+                                            class="btn btn-sm {{ $combo->active ? 'btn-outline-warning' : 'btn-outline-success' }}"
+                                            @disabled(! $combo->active && $combo->products->isEmpty())
+                                            title="{{ ! $combo->active && $combo->products->isEmpty() ? 'Edítalo y agrega productos antes de activarlo' : '' }}"
+                                        ><i class="fas {{ $combo->active ? 'fa-pause' : 'fa-check' }}" aria-hidden="true"></i><span>{{ $combo->active ? 'Desactivar' : 'Activar' }}</span></button>
                                     </form>
+                                    @if($combo->sales_count > 0)
+                                        <button class="btn btn-sm btn-outline-danger" disabled aria-label="Eliminar ({{ $combo->sales_count }} venta(s))" title="El combo tiene ventas asociadas y no se puede borrar">
+                                            <i class="fas fa-lock" aria-hidden="true"></i><span>Eliminar</span>
+                                        </button>
+                                    @else
+                                        <form action="{{ route('combos.destroy', $combo) }}" method="POST" onsubmit="return confirm('¿Eliminar combo? Esta acción no se puede deshacer.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                                                <i class="fas fa-trash-alt" aria-hidden="true"></i><span>Eliminar</span>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                                @if($combo->sales_count > 0)
+                                    <small class="combo-actions-note"><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>{{ $combo->sales_count }} venta(s). Se conserva para no alterar las ventas históricas.</small>
                                 @endif
                             </td>
                         </tr>

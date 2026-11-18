@@ -1,14 +1,14 @@
 @php
     $currentItems = old('items', isset($recipe) ? $recipe->items->map(fn ($item) => ['ingredient_id' => $item->ingredient_id, 'quantity' => $item->quantity])->all() : [['ingredient_id' => '', 'quantity' => 1]]);
+    $selectedProduct = $products->firstWhere('id', old('product_id', $recipe->product_id ?? null));
 @endphp
-<div class="form-group">
-    <label for="product_id">Producto final</label>
-    <select id="product_id" name="product_id" class="form-control" required>
-        <option value="">Seleccionar producto vendible</option>
-        @foreach($products as $product)
-            <option value="{{ $product->id }}" @selected(old('product_id', $recipe->product_id ?? '') == $product->id)>{{ $product->name }} ({{ $product->unit_label }})</option>
-        @endforeach
-    </select>
+<div class="form-group product-selector" data-product-selector data-mode="single" data-kind="product" data-active="1" data-without-recipe="1" data-except-recipe-id="{{ $recipe->id ?? '' }}" data-search-url="{{ route('products.search') }}">
+    <label for="product-search">Producto final</label>
+    <input id="product-search" type="search" class="form-control mb-2" data-product-query placeholder="Buscar por nombre o código" autocomplete="off">
+    <div class="small text-muted mb-2" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres.</div>
+    <div class="list-group mb-2" data-product-results></div>
+    <input type="hidden" id="product_id" name="product_id" value="{{ old('product_id', $recipe->product_id ?? '') }}" data-product-selected-id>
+    <div class="font-weight-bold" data-product-selected>{{ $selectedProduct?->name }}{{ $selectedProduct ? ' ('.$selectedProduct->unit_label.')' : '' }}</div>
     @error('product_id')<small class="text-danger">{{ $message }}</small>@enderror
 </div>
 <div class="form-group">
@@ -25,14 +25,15 @@
 <div id="recipe-items">
     @foreach($currentItems as $index => $item)
         <div class="form-row align-items-end recipe-item-row">
-            <div class="form-group col-md-8">
+            @php($selectedIngredient = $ingredients->firstWhere('id', $item['ingredient_id'] ?? null))
+            <div class="form-group col-md-8 product-selector" data-product-selector data-mode="single" data-kind="ingredient" data-active="1" data-search-url="{{ route('products.search') }}">
                 <label>Insumo</label>
-                <select name="items[{{ $index }}][ingredient_id]" class="form-control" required>
-                    <option value="">Seleccionar insumo</option>
-                    @foreach($ingredients as $ingredient)
-                        <option value="{{ $ingredient->id }}" @selected(($item['ingredient_id'] ?? '') == $ingredient->id)>{{ $ingredient->name }} ({{ $ingredient->unit_label }})</option>
-                    @endforeach
-                </select>
+                <input type="search" class="form-control mb-2" data-product-query placeholder="Buscar insumo por nombre o código" autocomplete="off">
+                <div class="small text-muted" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres.</div>
+                <div class="list-group" data-product-results></div>
+                <input type="hidden" name="items[{{ $index }}][ingredient_id]" value="{{ $item['ingredient_id'] ?? '' }}" data-product-selected-id>
+                <div class="font-weight-bold" data-product-selected>{{ $selectedIngredient?->name }}{{ $selectedIngredient ? ' ('.$selectedIngredient->unit_label.')' : '' }}</div>
+                @error("items.$index.ingredient_id")<small class="text-danger">{{ $message }}</small>@enderror
             </div>
             <div class="form-group col-md-3">
                 <label>Cantidad base</label>
@@ -50,14 +51,13 @@
 @endif
 <template id="recipe-item-template">
     <div class="form-row align-items-end recipe-item-row">
-        <div class="form-group col-md-8">
+        <div class="form-group col-md-8 product-selector" data-product-selector data-mode="single" data-kind="ingredient" data-active="1" data-search-url="{{ route('products.search') }}">
             <label>Insumo</label>
-            <select name="items[__INDEX__][ingredient_id]" class="form-control" required>
-                <option value="">Seleccionar insumo</option>
-                @foreach($ingredients as $ingredient)
-                    <option value="{{ $ingredient->id }}">{{ $ingredient->name }} ({{ $ingredient->unit_label }})</option>
-                @endforeach
-            </select>
+            <input type="search" class="form-control mb-2" data-product-query placeholder="Buscar insumo por nombre o código" autocomplete="off">
+            <div class="small text-muted" data-product-status role="status" aria-live="polite">Escribe al menos 2 caracteres.</div>
+            <div class="list-group" data-product-results></div>
+            <input type="hidden" name="items[__INDEX__][ingredient_id]" data-product-selected-id>
+            <div class="font-weight-bold" data-product-selected></div>
         </div>
         <div class="form-group col-md-3">
             <label>Cantidad base</label>
@@ -68,6 +68,7 @@
         </div>
     </div>
 </template>
+@include('shared.product-selector-script')
 @section('js')
     <script>
         (() => {
@@ -84,6 +85,7 @@
 
             addButton.addEventListener('click', () => {
                 container.insertAdjacentHTML('beforeend', template.innerHTML.replaceAll('__INDEX__', String(nextIndex++)));
+                window.initializeProductSelectors(container.lastElementChild);
             });
             container.addEventListener('click', event => {
                 if (event.target.closest('.remove-recipe-item') && container.querySelectorAll('.recipe-item-row').length > 1) {

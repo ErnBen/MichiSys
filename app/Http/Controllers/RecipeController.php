@@ -22,12 +22,14 @@ class RecipeController extends Controller
 
     public function create()
     {
-        $products = Product::where('kind', 'product')
-            ->where('active', true)
-            ->whereDoesntHave('recipe')
-            ->orderBy('name')
+        $selectedProductIds = collect([old('product_id')])->filter()->unique();
+        $products = Product::whereIn('id', $selectedProductIds)
+            ->where('kind', 'product')
             ->get();
-        $ingredients = Product::where('kind', 'ingredient')->where('active', true)->orderBy('name')->get();
+        $selectedIngredientIds = collect(old('items', []))->pluck('ingredient_id')->filter()->unique();
+        $ingredients = Product::whereIn('id', $selectedIngredientIds)
+            ->where('kind', 'ingredient')
+            ->get();
 
         return view('recipes.create', compact('products', 'ingredients'));
     }
@@ -61,14 +63,20 @@ class RecipeController extends Controller
 
     public function edit(Recipe $recipe)
     {
+        $recipe->load('items');
+        $selectedProductIds = collect([old('product_id', $recipe->product_id)])->filter()->unique();
         $products = Product::where('kind', 'product')
-            ->where(function ($query) use ($recipe): void {
-                $query->whereDoesntHave('recipe')->orWhere('id', $recipe->product_id);
-            })
+            ->where(fn ($query) => $query->where(fn ($query) => $query->whereDoesntHave('recipe')->orWhereIn('id', $selectedProductIds))
+                ->where(fn ($query) => $query->where('active', true)->orWhereIn('id', $selectedProductIds)))
             ->orderBy('name')
             ->get();
-        $ingredients = Product::where('kind', 'ingredient')->orderBy('name')->get();
-        $recipe->load('items');
+        $selectedIngredientIds = collect(old('items', $recipe->items->map(fn ($item) => ['ingredient_id' => $item->ingredient_id])->all()))
+            ->pluck('ingredient_id')
+            ->filter()
+            ->unique();
+        $ingredients = Product::whereIn('id', $selectedIngredientIds)
+            ->where('kind', 'ingredient')
+            ->get();
 
         return view('recipes.edit', compact('recipe', 'products', 'ingredients'));
     }

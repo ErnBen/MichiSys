@@ -67,7 +67,16 @@
         <tbody>
             @foreach($sale->combos as $item)
             <tr>
-                <td>{{ $item->combo?->name ?? 'Combo eliminado' }}</td>
+                <td>
+                    {{ $item->components_snapshot['combo_name'] ?? $item->combo?->name ?? 'Combo eliminado' }}
+                    @if($item->components_snapshot)
+                        <br><small>Incluye:
+                            @foreach($item->components_snapshot['components'] ?? $item->components_snapshot as $component)
+                                {{ (int) $component['quantity'] * $item->quantity }} {{ $component['unit_label'] }} {{ $component['name'] }}{{ $loop->last ? '' : ' ·' }}
+                            @endforeach
+                        </small>
+                    @endif
+                </td>
                 <td class="right">{{ $item->quantity }}</td>
                 <td class="right">{{ number_format($item->price, 2) }}</td>
                 <td class="right">{{ number_format($item->subtotal, 2) }}</td>
